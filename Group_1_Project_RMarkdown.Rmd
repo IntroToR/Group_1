@@ -9,22 +9,15 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+The following data set is titled "Caribou Locations" and was obtained from Week 26 of the TidyTuesday 2020 data sets. This source of this data is Movebank, which is an online platform hosted by the Max Planck Institute of Animal Behavior specifically for analyzing animal movement data. Data sets are initially provided as two separate files, "Individuals" and "Locations", and can be pulled and read into R using the following code.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
+individuals <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-23/individuals.csv')
+locations <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-23/locations.csv')
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+tuesdata <- tidytuesdayR::tt_load('2020-06-23')
+tuesdata <- tidytuesdayR::tt_load(2020, week = 26)
 
-```{r cars}
-summary(cars)
+individuals <- tuesdata$individuals
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
