@@ -1,7 +1,7 @@
 ---
 title: "Group_1_Project"
-author: "Matthew Runyon"
-date: "9/24/2020"
+author: "Matthew Runyon, Winston Wong, & Leo D'Agostino"
+date: "10/3/2020"
 output: html_document
 ---
 
@@ -9,14 +9,24 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+The data set that we have chosen to work with is the "Volcano Eruptions" data set, coming from Week 20 of the 2020 TidyTuesday project. This data is provided by the Smithsonian Institute. The data, which is split into five files (`volcano`, `eruptions`, `events`, `tree_rings`, and `sulfur`) and can be read in using the following code:
+
 ```{r}
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
-eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
-events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
-tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
-sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
 
-library(ggplot2)
+eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+
+events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
+
+tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
+
+sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
+```
+
+Here is just a simple line graph plotting sulfur concentration in ice cores across years of deposition.
+
+```{r}
+library(tidyverse)
 
 ggplot(sulfur, aes(x=year, y=neem))+
   geom_line()+
@@ -29,7 +39,11 @@ ggplot(sulfur, aes(x=year, y=wdc))+
   ggtitle("Sulfur Concentration per Year from WDC Ice Cores")+
   labs(x="Year (AD)", y="Sulfur Content (ng/g)")+
   theme(panel.grid=element_blank())
+```
 
+Likewise, here is just a simple line graph plotting tree ring Z-scores and European Temperature Index historical data.
+
+```{r}
 ggplot(tree_rings, aes(x=year, y=n_tree))+
   geom_line()+
   ggtitle("Tree Ring Z-Scores per Year")+
@@ -42,5 +56,123 @@ ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
   labs(x="Year (AD)", y="European Temperature Index")+
   theme(panel.grid=element_blank())
 
+```
+
+First I cleaned up the data in the `primary_volcano_type` column by removing all duplicate values of plural classifiers (removed all (es) and (s)). Then I coverted this column, as well as `country`, `region`, `subregion`, `tectonic_settings`, `evidence_category`, `major_rock_.`, and `minor_rock_.` to factors. I also changed all the unknown `last_eruption_year` data with `NA` and converted those to numeric values.
+
+```{r}
+volcano
+volcano$primary_volcano_type<-gsub(".(es).", "", volcano$primary_volcano_type)
+volcano$primary_volcano_type<-gsub(".(s).", "", volcano$primary_volcano_type)
+volcano$primary_volcano_type<-sub("Stratovolcano.", "Stratovolcano", volcano$primary_volcano_type)
+volcano$primary_volcano_type<-as.factor(volcano$primary_volcano_type)
+volcano$country<-as.factor(volcano$country)
+volcano$region<-as.factor(volcano$region)
+volcano$subregion<-as.factor(volcano$subregion)
+volcano$tectonic_settings<-as.factor(volcano$tectonic_settings)
+volcano$evidence_category<-as.factor(volcano$evidence_category)
+volcano$major_rock_1<-as.factor(volcano$major_rock_1)
+volcano$major_rock_2<-as.factor(volcano$major_rock_2)
+volcano$major_rock_3<-as.factor(volcano$major_rock_3)
+volcano$major_rock_4<-as.factor(volcano$major_rock_4)
+volcano$major_rock_5<-as.factor(volcano$major_rock_5)
+volcano$minor_rock_1<-as.factor(volcano$minor_rock_1)
+volcano$minor_rock_2<-as.factor(volcano$minor_rock_2)
+volcano$minor_rock_3<-as.factor(volcano$minor_rock_3)
+volcano$minor_rock_4<-as.factor(volcano$minor_rock_4)
+volcano$minor_rock_5<-as.factor(volcano$minor_rock_5)
+volcano$last_eruption_year<-as.numeric(gsub("Unknown", NA, volcano$last_eruption_year))
+```
+
+Here I create a bar chart to show the types of volcanos present among the provided data. Based on this chart, we can see that, by a large margin, stratovolcanos are the most common type of volcano.
+
+```{r}
+type_count<-volcano %>% 
+  group_by(primary_volcano_type) %>%
+  summarise(no_rows1 = length(primary_volcano_type))
+
+ggplot(volcano, aes(x=primary_volcano_type))+
+  geom_bar()+
+  ggtitle("Number of Volcanos by Type")+
+  labs(x="Type of Volcano", y="Number of Volcanos")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=type_count ,aes(x=primary_volcano_type, y=no_rows1, label=no_rows1), nudge_y=30)
+```
+
+Here I create a bar chart showing the number of volcanos present in various regions of the world. 
+
+```{r}
+region_count<-volcano %>% 
+  group_by(region) %>%
+  summarise(no_rows2 = length(region))
+
+ggplot(volcano, aes(x=region))+
+  geom_bar()+
+  ggtitle("Number of Volcanos by Region")+
+  labs(x="Region", y="Number of Volcanos")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=region_count ,aes(x=region, y=no_rows2, label=no_rows2), nudge_y=10)
+
+```
+
+Here I create a bar chart showing the number of volcanos in each tectonic subcategory. Here we can see that the most common tectonic setting is for subduction zone / continental crust.
+
+```{r}
+tectonic_count<-volcano %>% 
+  group_by(tectonic_settings) %>%
+  summarise(no_rows3 = length(tectonic_settings))
+
+ggplot(volcano, aes(x=tectonic_settings))+
+  geom_bar()+
+  ggtitle("Number of Volcanos by Tectonic Setting")+
+  labs(x="Tectonic Setting", y="Number of Volcanos")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=tectonic_count ,aes(x=tectonic_settings, y=no_rows3, label=no_rows3), nudge_y=50)
+```
+
+Here is a bar chart showing how many volcanos have different types of known evidence of past eruptions. 
+
+```{r}
+evidence_count<-volcano %>% 
+  group_by(evidence_category) %>%
+  summarise(no_rows4 = length(evidence_category))
+
+ggplot(volcano, aes(x=evidence_category))+
+  geom_bar()+
+  ggtitle("Number of Volcanos by Evidence Category")+
+  labs(x="Evidence Category", y="Number of Volcanos")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)
+```
+
+Here is a histogram showing the frequency of different volcano heights. The majority of volcanos are under 2,500 feet tall, with most being 1,000 to 1,500 feet tall.
+
+```{r}
+ggplot(volcano, aes(x=elevation))+
+  geom_histogram(binwidth=500)+
+  ggtitle("Histogram of Volcano Elevations")+
+  labs(x="Elevation", y="Observations")+
+  theme(panel.grid=element_blank())
+```
+
+Here's a histogram showing how many volcanos have a popupulation of a certain size within 100 km of the volcano. This chart needs work because there is one outlier that is throwing things off really badly with a high population, so you can't see the rest of the bins very well.
+
+```{r}
+ggplot(volcano, aes(x=population_within_100_km))+
+  geom_histogram(binwidth=5000000)+
+  ggtitle("Histogram of Population within 100 km of Volcanoes")+
+  labs(x="Population", y="Observations")+
+  theme(panel.grid=element_blank())
+max(volcano$population_within_5_km)
+```
+
+This is a histogram showing the number of volcanos that have a known eruption within a certian number of years in the past. Currently, the bin width is set at 1,000 years. However, this doesn't discriminate well for the most recent years. Something needs to be done to split up the more recent and the older data.
+
+```{r}
+ggplot(volcano, aes(x=last_eruption_year))+
+  geom_histogram(binwidth=1000)+
+  ggtitle("Histogram of Last Known Eruptions")+
+  labs(x="Date", y="Observations")+
+  theme(panel.grid=element_blank())
 ```
 
