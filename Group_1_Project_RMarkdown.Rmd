@@ -9,15 +9,38 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The following data set is titled "Caribou Locations" and was obtained from Week 26 of the TidyTuesday 2020 data sets. This source of this data is Movebank, which is an online platform hosted by the Max Planck Institute of Animal Behavior specifically for analyzing animal movement data. Data sets are initially provided as two separate files, "Individuals" and "Locations", and can be pulled and read into R using the following code.
-
 ```{r}
-individuals <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-23/individuals.csv')
-locations <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-23/locations.csv')
+volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
+eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
+tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
+sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
 
-tuesdata <- tidytuesdayR::tt_load('2020-06-23')
-tuesdata <- tidytuesdayR::tt_load(2020, week = 26)
+library(ggplot2)
 
-individuals <- tuesdata$individuals
+ggplot(sulfur, aes(x=year, y=neem))+
+  geom_line()+
+  ggtitle("Sulfur Concentration per Year from NEEM Ice Cores")+
+  labs(x="Year (AD)", y="Sulfur Content (ng/g)")+
+  theme(panel.grid=element_blank())
+
+ggplot(sulfur, aes(x=year, y=wdc))+
+  geom_line()+
+  ggtitle("Sulfur Concentration per Year from WDC Ice Cores")+
+  labs(x="Year (AD)", y="Sulfur Content (ng/g)")+
+  theme(panel.grid=element_blank())
+
+ggplot(tree_rings, aes(x=year, y=n_tree))+
+  geom_line()+
+  ggtitle("Tree Ring Z-Scores per Year")+
+  labs(x="Year (AD)", y="Z-Score")+
+  theme(panel.grid=element_blank())
+
+ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
+  geom_line()+
+  ggtitle("European Temperature Index per Year")+
+  labs(x="Year (AD)", y="European Temperature Index")+
+  theme(panel.grid=element_blank())
+
 ```
 
