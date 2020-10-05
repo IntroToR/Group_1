@@ -58,6 +58,7 @@ ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
 
 ```
 
+__Data Cleanup__
 First I cleaned up the data in the `primary_volcano_type` column by removing all duplicate values of plural classifiers (removed all (es) and (s)). Then I coverted this column, as well as `country`, `region`, `subregion`, `tectonic_settings`, `evidence_category`, `major_rock_.`, and `minor_rock_.` to factors. I also changed all the unknown `last_eruption_year` data with `NA` and converted those to numeric values.
 
 ```{r}
@@ -84,6 +85,7 @@ volcano$minor_rock_5<-as.factor(volcano$minor_rock_5)
 volcano$last_eruption_year<-as.numeric(gsub("Unknown", NA, volcano$last_eruption_year))
 ```
 
+__Types of Volcanoes__
 Here I create a bar chart to show the types of volcanos present among the provided data. Based on this chart, we can see that, by a large margin, stratovolcanos are the most common type of volcano.
 
 ```{r}
@@ -97,22 +99,6 @@ ggplot(volcano, aes(x=primary_volcano_type))+
   labs(x="Type of Volcano", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   geom_text(data=type_count ,aes(x=primary_volcano_type, y=no_rows1, label=no_rows1), nudge_y=30)
-```
-
-Here I create a bar chart showing the number of volcanos present in various regions of the world. 
-
-```{r}
-region_count<-volcano %>% 
-  group_by(region) %>%
-  summarise(no_rows2 = length(region))
-
-ggplot(volcano, aes(x=region))+
-  geom_bar()+
-  ggtitle("Number of Volcanos by Region")+
-  labs(x="Region", y="Number of Volcanos")+
-  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=region_count ,aes(x=region, y=no_rows2, label=no_rows2), nudge_y=10)
-
 ```
 
 Here I create a bar chart showing the number of volcanos in each tectonic subcategory. Here we can see that the most common tectonic setting is for subduction zone / continental crust.
@@ -130,8 +116,267 @@ ggplot(volcano, aes(x=tectonic_settings))+
   geom_text(data=tectonic_count ,aes(x=tectonic_settings, y=no_rows3, label=no_rows3), nudge_y=50)
 ```
 
-Here is a bar chart showing how many volcanos have different types of known evidence of past eruptions. 
+__Elevation__
+Here is a histogram showing the frequency of different volcano heights. The majority of volcanos are under 2,500 feet tall, with most being 1,000 to 1,500 feet tall.
+```{r}
+ggplot(volcano, aes(x=elevation))+
+  geom_histogram(binwidth=500)+
+  ggtitle("Histogram of Volcano Elevations")+
+  labs(x="Elevation", y="Observations")+
+  theme(panel.grid=element_blank())
+```
 
+__Means and Multiple Comparisons (Volcano Type) of Elevation__
+Here I am using the `car` package for the Levene's Test of Homogeneity of Variance, and the `dunn.test` package as a post hoc test for the Kruskal-Wallis test that I perform if the prerequisites for conducting an ANOVA are not met (homogeneity of variance and normal distribution of residuals). Normal distribution of residuals is evaluated using the `shapiro.test()` function.
+```{r}
+
+library(car)
+library(dunn.test)
+
+mean(volcano$elevation)
+
+ggplot(volcano, aes(x=elevation, y=primary_volcano_type))+
+  geom_boxplot()+
+  ggtitle("Boxplot of Volcano Elevation by Volcano Type")+
+  labs(x="Elevation (Meters above Sea Level)", y="Volcano Type")+
+  coord_flip()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+
+#Ho: All elevations are equal among volcano types.
+#HA: At least one mean elevation is different.
+model1=lm(elevation~primary_volcano_type, data=volcano)
+res_values1<-residuals(model1)
+shapiro.test(res_values1)
+leveneTest(model1)
+#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
+KW1<-kruskal.test(elevation~primary_volcano_type, data=volcano)
+#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
+DUNN1<-as.data.frame(dunn.test(volcano$elevation, g=volcano$primary_volcano_type, kw=T))
+
+```
+
+__Multiple Comparisons (Volcano Type)  of Population - 5km__
+```{r}
+ggplot(volcano, aes(x=population_within_5_km, y=primary_volcano_type))+
+  geom_boxplot()+
+  ggtitle("Boxplot of Population within 5 km by Volcano Type")+
+  labs(x="Population", y="Volcano Type")+
+  coord_flip()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+
+#Ho: All populations are equal among volcano types
+#HA: At least one mean population is different
+model2=lm(population_within_5_km~primary_volcano_type, data=volcano)
+res_values2<-residuals(model2)
+shapiro.test(res_values2)
+leveneTest(model2)
+#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
+KW2<-kruskal.test(population_within_5_km~primary_volcano_type, data=volcano)
+KW2
+#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
+DUNN2<-as.data.frame(dunn.test(volcano$population_within_5_km, g=volcano$primary_volcano_type, kw=T))
+```
+
+__Multiple Comparisons of (Volcano Type) Population- 10 km__
+```{r}
+ggplot(volcano, aes(x=population_within_10_km, y=primary_volcano_type))+
+  geom_boxplot()+
+  ggtitle("Boxplot of Population within 10 km by Volcano Type")+
+  labs(x="Population", y="Volcano Type")+
+  coord_flip()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+
+#Ho: All populations are equal among volcano types
+#HA: At least one mean population is different
+model3=lm(population_within_10_km~primary_volcano_type, data=volcano)
+res_values3<-residuals(model3)
+shapiro.test(res_values3)
+leveneTest(model3)
+#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
+KW3<-kruskal.test(population_within_10_km~primary_volcano_type, data=volcano)
+KW3
+#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
+DUNN3<-as.data.frame(dunn.test(volcano$population_within_10_km, g=volcano$primary_volcano_type, kw=T))
+```
+
+__Multiple Comparisons (Volcano Type) of Population - 30 km__
+```{r}
+ggplot(volcano, aes(x=population_within_30_km, y=primary_volcano_type))+
+  geom_boxplot()+
+  ggtitle("Boxplot of Population within 30 km by Volcano Type")+
+  labs(x="Population", y="Volcano Type")+
+  coord_flip()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+
+#Ho: All populations are equal among volcano types
+#HA: At least one mean population is different
+model4=lm(population_within_30_km~primary_volcano_type, data=volcano)
+res_values4<-residuals(model4)
+shapiro.test(res_values4)
+leveneTest(model4)
+#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
+KW4<-kruskal.test(population_within_30_km~primary_volcano_type, data=volcano)
+KW4
+#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
+DUNN4<-as.data.frame(dunn.test(volcano$population_within_30_km, g=volcano$primary_volcano_type, kw=T))
+```
+
+__Multiple Comparisons (Volcano Type) of Population - 100 km__
+```{r}
+ggplot(volcano, aes(x=population_within_100_km, y=primary_volcano_type))+
+  geom_boxplot()+
+  ggtitle("Boxplot of Population within 100 km by Volcano Type")+
+  labs(x="Population", y="Volcano Type")+
+  coord_flip()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+
+#Ho: All populations are equal among volcano types
+#HA: At least one mean population is different
+model5=lm(population_within_100_km~primary_volcano_type, data=volcano)
+res_values5<-residuals(model5)
+shapiro.test(res_values5)
+leveneTest(model5)
+#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
+KW5<-kruskal.test(population_within_100_km~primary_volcano_type, data=volcano)
+KW5
+#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
+DUNN5<-as.data.frame(dunn.test(volcano$population_within_100_km, g=volcano$primary_volcano_type, kw=T))
+```
+
+Here, I am showing essentially the same thing as above. I calculated the means population per volcano type and plotted them in bar graphs. This is a better representation than the boxplots above because the outliers skewed the range and caused the boxes of the boxplot to be so compressed that no real differences could be seen. However, as an important note, because these outliers were so severe, they do skew the mean values reported.
+
+```{r, figures-side, fig.show="hold", out.width="100%"}
+population_means_by_volcano_type<-group_by(volcano, primary_volcano_type) %>% 
+  summarize(mean_population_within_5_km = mean(population_within_5_km), mean_population_within_10_km = mean(population_within_10_km), mean_population_within_30_km = mean(population_within_30_km), mean_population_within_100_km = mean(population_within_100_km))
+population_means_by_volcano_type[,2:5]<-round(population_means_by_volcano_type[,2:5],digits=0)
+
+ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_5_km))+
+  geom_col()+
+  ggtitle("Mean Population Living within 5km of Volcanos by Volcano Type")+
+  labs(x="Volcano Type", y="Mean Population within 5km")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_5_km, label=mean_population_within_5_km), nudge_y=10000, size=3)
+
+ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_10_km))+
+  geom_col()+
+  ggtitle("Mean Population Living within 10km of Volcanos by Volcano Type")+
+  labs(x="Volcano Type", y="Mean Population within 10km")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_10_km, label=mean_population_within_10_km), nudge_y=10000, size=3)
+
+ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_30_km))+
+  geom_col()+
+  ggtitle("Mean Population Living within 30km of Volcanos by Volcano Type")+
+  labs(x="Volcano Type", y="Mean Population within 30km")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_30_km, label=mean_population_within_30_km), nudge_y=25000, size=3)
+
+ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_100_km))+
+  geom_col()+
+  ggtitle("Mean Population Living within 100km of Volcanos by Volcano Type")+
+  labs(x="Volcano Type", y="Mean Population within 100km")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_100_km, label=mean_population_within_100_km), nudge_y=175000, size=3)
+```
+
+__Eruption Dates__
+This is a histogram showing the number of volcanos that have a known eruption within a certian number of years in the past. Currently, the bin width is set at 1,000 years. However, this doesn't discriminate well for the most recent years. Something needs to be done to split up the more recent and the older data.
+
+```{r}
+ggplot(volcano, aes(x=last_eruption_year))+
+  geom_histogram(binwidth=1000)+
+  ggtitle("Histogram of Last Known Eruptions")+
+  labs(x="Date", y="Observations")+
+  theme(panel.grid=element_blank())
+```
+
+__Multiple Comparisons - Last Known Eruption__
+This analysis seeks to determine whether or not certain types of volcanoes are more likely to erupt than others based on their last known eruption date. In this boxplot, the further down the y-axis, the longer it has been since an eruption.
+```{r}
+ggplot(volcano, aes(x=last_eruption_year, y=primary_volcano_type))+
+  geom_boxplot()+
+  ggtitle("Boxplot of Last Eruption Year by Volcano Type")+
+  labs(x="Year", y="Volcano Type")+
+  coord_flip()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+
+#Ho: Mean last eruption year is equal among all volcano types
+#HA: At least one mean eruption year is not equal
+model6=lm(last_eruption_year~primary_volcano_type, data=volcano)
+res_values6<-residuals(model6)
+shapiro.test(res_values6)
+leveneTest(model6)
+#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
+KW6<-kruskal.test(last_eruption_year~primary_volcano_type, data=volcano)
+KW6
+#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
+DUNN6<-as.data.frame(dunn.test(volcano$last_eruption_year, g=volcano$primary_volcano_type, kw=T))
+```
+
+Much like above, this analysis seeks to determine if volcanos in different tectonic settings, rather than just different volcano types, are more likely than others to erupt more frequently. Here again, the rationale is that the further down the y-axis, the longer it has been since an eruption.
+```{r}
+ggplot(volcano, aes(x=last_eruption_year, y=tectonic_settings))+
+  geom_boxplot()+
+  ggtitle("Boxplot of Last Eruption Year by Tectonic Setting")+
+  labs(x="Year", y="Tectonic Setting")+
+  coord_flip()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+
+#Ho: Mean last eruption year is equal among all tectonic settings.
+#HA: At least one mean eruption year is not equal.
+model7=lm(last_eruption_year~tectonic_settings, data=volcano)
+res_values7<-residuals(model7)
+shapiro.test(res_values7)
+leveneTest(model7)
+#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
+KW7<-kruskal.test(last_eruption_year~tectonic_settings, data=volcano)
+KW7
+#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
+DUNN7<-as.data.frame(dunn.test(volcano$last_eruption_year, g=volcano$tectonic_settings, kw=T))
+```
+
+__Linear Regression and Correlation of Volcano Elevation with Last Known Eruption Year__
+Here, a reasonable assumption that could be made about volcanos is that ones that erupt more frequently are taller because they are adding more layers of molten rock to their outer surface. To test this assumption, I performed linear regression analysis between last known eruption year and elevation. Based on the results, we can conclude that there is no significant linear relationship between elevation and last known eruption date.
+```{r}
+#Ho: Slope = 0 (no linear relationship)
+#HA: Slope not equal to 0 (linear relationship)
+
+library(ggpubr)
+
+ggplot(volcano, aes(x=last_eruption_year, y=elevation))+
+  geom_point(alpha=1/5)+
+  ggtitle("Last Eruption Year vs Elevation")+
+  labs(x="Year", y="Elevation")+
+  theme(panel.grid=element_blank())+
+  stat_cor()
+
+```
+
+
+__Areas that Need Further Development before Project Submission__
+Here I create a bar chart showing the number of volcanos present in various regions of the world. 
+```{r}
+region_count<-volcano %>% 
+  group_by(region) %>%
+  summarise(no_rows2 = length(region))
+
+ggplot(volcano, aes(x=region))+
+  geom_bar()+
+  ggtitle("Number of Volcanos by Region")+
+  labs(x="Region", y="Number of Volcanos")+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
+  geom_text(data=region_count ,aes(x=region, y=no_rows2, label=no_rows2), nudge_y=10)
+
+```
+
+Here is a bar chart showing how many volcanos have different types of known evidence of past eruptions. 
 ```{r}
 evidence_count<-volcano %>% 
   group_by(evidence_category) %>%
@@ -145,34 +390,4 @@ ggplot(volcano, aes(x=evidence_category))+
   geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)
 ```
 
-Here is a histogram showing the frequency of different volcano heights. The majority of volcanos are under 2,500 feet tall, with most being 1,000 to 1,500 feet tall.
-
-```{r}
-ggplot(volcano, aes(x=elevation))+
-  geom_histogram(binwidth=500)+
-  ggtitle("Histogram of Volcano Elevations")+
-  labs(x="Elevation", y="Observations")+
-  theme(panel.grid=element_blank())
-```
-
-Here's a histogram showing how many volcanos have a popupulation of a certain size within 100 km of the volcano. This chart needs work because there is one outlier that is throwing things off really badly with a high population, so you can't see the rest of the bins very well.
-
-```{r}
-ggplot(volcano, aes(x=population_within_100_km))+
-  geom_histogram(binwidth=5000000)+
-  ggtitle("Histogram of Population within 100 km of Volcanoes")+
-  labs(x="Population", y="Observations")+
-  theme(panel.grid=element_blank())
-max(volcano$population_within_5_km)
-```
-
-This is a histogram showing the number of volcanos that have a known eruption within a certian number of years in the past. Currently, the bin width is set at 1,000 years. However, this doesn't discriminate well for the most recent years. Something needs to be done to split up the more recent and the older data.
-
-```{r}
-ggplot(volcano, aes(x=last_eruption_year))+
-  geom_histogram(binwidth=1000)+
-  ggtitle("Histogram of Last Known Eruptions")+
-  labs(x="Date", y="Observations")+
-  theme(panel.grid=element_blank())
-```
 
