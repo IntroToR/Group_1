@@ -18,6 +18,7 @@ events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tid
 tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
 sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
 ```
+__Sulfur Concentration Dataset__
 
 Here is just a simple line graph plotting sulfur concentration in ice cores across years of deposition.
 
@@ -130,6 +131,8 @@ write.table(mean(sulfur$neem, na.rm = TRUE), "neem_mean.txt", sep = "\t")
 write.table(mean(sulfur$wdc, na.rm = TRUE), "wdc_mean.txt", sep = "\t")
 ```
 
+__Tree Ring Dataset__
+
 Likewise, here is just a simple line graph plotting tree ring Z-scores and European Temperature Index historical data.
 
 ```{r}
@@ -146,6 +149,7 @@ ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
   theme(panel.grid=element_blank())
 
 ```
+__Volcano Dataset__
 
 __Data Cleanup__
 
