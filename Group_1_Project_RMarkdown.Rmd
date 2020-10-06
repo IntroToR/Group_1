@@ -34,7 +34,100 @@ ggplot(sulfur, aes(x=year, y=wdc))+
   geom_line()+
   ggtitle("Sulfur Concentration per Year from WDC Ice Cores")+
   labs(x="Year (AD)", y="Sulfur Content (ng/g)")+
-  theme(panel.grid=element_blank())
+  theme(panel.grid=element_blank())   
+```
+
+Conduct a statistical analysis such as Analysis of Variance or Linear Regression:
+
+First step is to create scatter plots to visualize a possible linear relationship between the independent and dependent variable, in this case "year" and sulfur concentration for each location. From the scatterplot it does not appear that there is a linear relationship between "year" and sulfur concentration for each location 
+
+```{r}
+scatter.smooth(x=sulfur$year, y=sulfur$neem, main="year ~ neem") #scatter plot for year vs. neem
+scatter.smooth(x=sulfur$year, y=sulfur$wdc, main="year ~ wdc") #scatter plot for year vs. wdc
+```
+
+Second step is to Create boxplots to check for outliers for the variables "neem" and "wdc" sulfur concentrations; From both boxplots we conclude that there are many outliers
+```{r}
+
+#Boxplot for sulfur levels from NEEM created using base R
+sulfur$neem[as.numeric(sulfur$neem)]
+boxplot(sulfur$neem, main = "Sulfur detected in ng/g from NEEM",
+        xlab = "sulfur (ng/g)", horizontal = TRUE)
+
+#Boxplot for sulfur levels from WDC created using base R
+WDCsulfur <- as.numeric(sulfur$wdc)
+boxplot(sulfur$wdc, main = "Sulfur detected in ng/g from WDC",
+        xlab = "sulfur (ng/g)", horizontal = TRUE)
+
+```
+
+Next step is create a density plot to see if sulfur concentration follows a normal distribution at both locations (NEEM and WDC). From the density plots, we see that sulfur concentrations from NEEM and WDC follow a right skewed distribution and is non-normal
+
+We will need to download the following package to create density plots:
+library(e1071)
+
+```{r}
+par(mfrow=c(1, 2))  # divide graph area in 2 columns
+
+#creating density plot for sulfur levels from NEEM
+plot(density(sulfur$neem, na.rm = TRUE), main="NEEM Sulfur Levels",
+  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$neem, na.rm = TRUE), 2)))
+  polygon(density(sulfur$neem, na.rm = TRUE), col="red")
+
+#creating density plot for sulfur levels from WDC
+plot(density(sulfur$wdc, na.rm = TRUE), main="WDC Sulfur levels", 
+  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$wdc, na.rm = TRUE), 2))) 
+  polygon(density(sulfur$wdc), col="red")
+  
+```
+
+After creating and checking the previous 3 plots, we have to test for correlation between year and sulfur concentrations in both locations.Even though the disibutions of sulfur levels appears non-normal for NEEM and WDC, we will continue to test for correlation using the Pearson's "r" for the sake of the project. Our null hypothesis is that there is no correlation between year and sulfur levels for NEEM and WDC. The alternative hypothesis is there is a correlation between year and sulfur levels for NEEM and WDC.
+
+Both tests revealed p-levels below 0.05. We reject the null hypothesis and conclude that there is a correlation between year and sulfur levels for NEEM and WDC
+
+```{r}
+#calculating the Pearson's "r" for sulfur levels from NEEM
+cor(sulfur$year, sulfur$neem, method = "pearson", use = "complete.obs")
+#testing if the correlation is statistically significant from 0
+cor.test(sulfur$year, sulfur$wdc, method="pearson")
+
+#calculating the Pearson's "r" for sulfur levels from WDC
+cor(sulfur$year, sulfur$wdc, method = "pearson", use = "complete.obs")
+#testing if the correlation is statistically significant from 0
+cor.test(sulfur$year, sulfur$wdc, method="pearson")
+
+```
+
+Building a Linear Model - Building a linear model allows us to establish a relationship between year and sulfur levels at NEEM and WDC locations as a
+sulfur levels as a function for year. Linear models for sulfur levels at both locations are shown below:
+
+NEEM sulfur levels (ng/g) = 19.886023 - 0.005519 * year
+WDC sulfur levels (ng/g) = 21.02073 - 0.01072 * year
+
+```{r}
+NEEM_linear_model <- lm(neem ~ year, data = sulfur) #linear model for Sulfur levels at NEEM
+NEEM_linear_model
+
+WDC_linear_model <- lm(wdc ~ year, data = sulfur) #linear model for Sulfur levels at WDC
+WDC_linear_model
+```
+
+Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with sulfur levels at NEEM/WDC and year is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between sulfur levels at NEEM/WDC and year.Our conclusions are noted below:
+
+p-value for the linear model for sulfur levels at NEEM was above the 0.05 threshold, we fail to reject the null hypothesis that the coefficients associated with sulfur levels at NEEM and year is equal to zero
+
+p-value for the linear model for sulfur levels at WDC was below the 0.05 threshold, we reject the null hypothesis and conclude that there is a relationship between sulfur levels at WDC and year.
+
+```{r}
+summary(NEEM_linear_model) #model summary for sulfur levels at NEEM
+
+summary(WDC_linear_model) #model summary for sulfur levels at WDC
+```
+
+Saving the means of sulfur levels at NEEM and WDC as a text file
+```{r}
+write.table(mean(sulfur$neem, na.rm = TRUE), "neem_mean.txt", sep = "\t")
+write.table(mean(sulfur$wdc, na.rm = TRUE), "wdc_mean.txt", sep = "\t")
 ```
 
 Likewise, here is just a simple line graph plotting tree ring Z-scores and European Temperature Index historical data.
