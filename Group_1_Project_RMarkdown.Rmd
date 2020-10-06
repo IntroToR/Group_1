@@ -13,13 +13,9 @@ The data set that we have chosen to work with is the "Volcano Eruptions" data se
 
 ```{r}
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
-
 eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
-
 events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
-
 tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
-
 sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
 ```
 
@@ -59,7 +55,8 @@ ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
 ```
 
 __Data Cleanup__
-First I cleaned up the data in the `primary_volcano_type` column by removing all duplicate values of plural classifiers (removed all (es) and (s)). Then I coverted this column, as well as `country`, `region`, `subregion`, `tectonic_settings`, `evidence_category`, `major_rock_.`, and `minor_rock_.` to factors. I also changed all the unknown `last_eruption_year` data with `NA` and converted those to numeric values.
+
+First I cleaned up the data in the `primary_volcano_type` column by removing all duplicate values of plural classifiers (removed all (es) and (s)). Then I coverted this column, as well as `country`, `region`, `subregion`, `tectonic_settings`, `evidence_category`, `major_rock_.`, and `minor_rock_.` to factors. I also changed all the unknown `last_eruption_year` data with `NA` and converted those to numeric values. Finally, I arrange the data, create a new columns for years since the last eruption date using the `last_eruption_year` variable, and order the columns how I want them.
 
 ```{r}
 volcano
@@ -83,9 +80,16 @@ volcano$minor_rock_3<-as.factor(volcano$minor_rock_3)
 volcano$minor_rock_4<-as.factor(volcano$minor_rock_4)
 volcano$minor_rock_5<-as.factor(volcano$minor_rock_5)
 volcano$last_eruption_year<-as.numeric(gsub("Unknown", NA, volcano$last_eruption_year))
+volcano<-volcano%>%
+  arrange(primary_volcano_type, last_eruption_year, elevation)%>%
+  mutate(years_ago=2020-last_eruption_year)
+ordered_columns<-c("volcano_number", "volcano_name", "region", "subregion", "country", "latitude", "longitude", "tectonic_settings", "primary_volcano_type", "elevation", "last_eruption_year", "years_ago", "evidence_category", "population_within_5_km","population_within_10_km","population_within_30_km","population_within_100_km", "major_rock_1","major_rock_2","major_rock_3","major_rock_4","major_rock_5","minor_rock_1","minor_rock_2","minor_rock_3","minor_rock_4","minor_rock_5")
+volcano[ordered_columns]
+
 ```
 
 __Types of Volcanoes__
+
 Here I create a bar chart to show the types of volcanos present among the provided data. Based on this chart, we can see that, by a large margin, stratovolcanos are the most common type of volcano.
 
 ```{r}
@@ -117,6 +121,7 @@ ggplot(volcano, aes(x=tectonic_settings))+
 ```
 
 __Elevation__
+
 Here is a histogram showing the frequency of different volcano heights. The majority of volcanos are under 2,500 feet tall, with most being 1,000 to 1,500 feet tall.
 ```{r}
 ggplot(volcano, aes(x=elevation))+
@@ -127,6 +132,7 @@ ggplot(volcano, aes(x=elevation))+
 ```
 
 __Means and Multiple Comparisons (Volcano Type) of Elevation__
+
 Here I am using the `car` package for the Levene's Test of Homogeneity of Variance, and the `dunn.test` package as a post hoc test for the Kruskal-Wallis test that I perform if the prerequisites for conducting an ANOVA are not met (homogeneity of variance and normal distribution of residuals). Normal distribution of residuals is evaluated using the `shapiro.test()` function.
 ```{r}
 
@@ -285,6 +291,7 @@ ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_popu
 ```
 
 __Eruption Dates__
+
 This is a histogram showing the number of volcanos that have a known eruption within a certian number of years in the past. Currently, the bin width is set at 1,000 years. However, this doesn't discriminate well for the most recent years. Something needs to be done to split up the more recent and the older data.
 
 ```{r}
@@ -296,6 +303,7 @@ ggplot(volcano, aes(x=last_eruption_year))+
 ```
 
 __Multiple Comparisons - Last Known Eruption__
+
 This analysis seeks to determine whether or not certain types of volcanoes are more likely to erupt than others based on their last known eruption date. In this boxplot, the further down the y-axis, the longer it has been since an eruption.
 ```{r}
 ggplot(volcano, aes(x=last_eruption_year, y=primary_volcano_type))+
@@ -343,6 +351,7 @@ DUNN7<-as.data.frame(dunn.test(volcano$last_eruption_year, g=volcano$tectonic_se
 ```
 
 __Linear Regression and Correlation of Volcano Elevation with Last Known Eruption Year__
+
 Here, a reasonable assumption that could be made about volcanos is that ones that erupt more frequently are taller because they are adding more layers of molten rock to their outer surface. To test this assumption, I performed linear regression analysis between last known eruption year and elevation. Based on the results, we can conclude that there is no significant linear relationship between elevation and last known eruption date.
 ```{r}
 #Ho: Slope = 0 (no linear relationship)
@@ -360,8 +369,9 @@ ggplot(volcano, aes(x=last_eruption_year, y=elevation))+
 ```
 
 
-__Areas that Need Further Development before Project Submission__
-Here I create a bar chart showing the number of volcanos present in various regions of the world. 
+___Global Volcano Locations___
+
+Here I create a bar chart showing the number of volcanos present in various regions of the world. Since actual latitude and longitude coordinates were provided in this data file, following this regional grouping bar chart, I use the `threejs` package to plot each of the coordinates on a global map. Height of individual bars on the map represent volcano elevation, while heatmap colors indicate the number of years since the last known eruption (red = most recent, white = most distant past).
 ```{r}
 region_count<-volcano %>% 
   group_by(region) %>%
@@ -374,7 +384,25 @@ ggplot(volcano, aes(x=region))+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   geom_text(data=region_count ,aes(x=region, y=no_rows2, label=no_rows2), nudge_y=10)
 
+library(threejs)
+
+for_globe<-volcano[,c("latitude", "longitude", "years_ago", "elevation")]
+colors=as.numeric(cut(for_globe$years_ago,
+                      breaks=1000, include.lowest=T, na.rm=T))
+colors=heat.colors(colors)
+globejs(lat=for_globe$latitude, long=for_globe$longitude, val=(0.025*for_globe$elevation), color=colors, atmosphere=T, pointsize=0.75, emissive=T)
+
+#Might do something with the latitude groupings (Antarctic Circle, Tropic of Capricorn, Equator, Tropic of Cancer, Arctic Circle)
+s<-volcano%>%filter(latitude >=-90 & latitude <=-66.5)
+s2<-volcano%>%filter(latitude >=-66.5 & latitude <=-23.5)
+s3<-volcano%>%filter(latitude >=-23.5 & latitude <=0)
+s4<-volcano%>%filter(latitude >=0 & latitude <=23.5)
+s5<-volcano%>%filter(latitude >=23.5 & latitude <=66.5)
+s6<-volcano%>%filter(latitude >=66.5 & latitude <=90)
+
 ```
+
+__Areas that Need More Work before Project Submission__
 
 Here is a bar chart showing how many volcanos have different types of known evidence of past eruptions. 
 ```{r}
@@ -389,5 +417,3 @@ ggplot(volcano, aes(x=evidence_category))+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)
 ```
-
-
