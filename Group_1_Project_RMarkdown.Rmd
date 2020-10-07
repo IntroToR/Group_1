@@ -514,3 +514,43 @@ ggplot(volcano, aes(x=evidence_category))+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)
 ```
+
+__Eruptions Dataset__
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+#simple histogram showing the number of eruptions of differing intesities
+hist(eruptions$vei, main = "Volcano eruption index frequency", xlab = "Volcano eruption index", ylab = "Frequency")
+```
+
+```{r}
+#interesting graphs showing the distribution of vei over longitude and latitude
+#y axis is intensity and the x axis is longitude, size of dot = the number of observations at that given latitude
+ggplot(eruptions, aes(x=latitude, y=vei))+
+  geom_count(na.rm = T)+
+  ggtitle("Volcano eruption index distributed over latitude")+
+  labs(x="Latitude", y="vei")
+
+ggplot(eruptions, aes(x=longitude, y=vei))+
+  geom_count(na.rm = T)+
+  ggtitle("Volcano eruption index distributed over longitude")+
+  labs(x="Longitude", y="vei")
+```
+
+```{r}
+#average number of years during which the eruption takes place
+data <- eruptions[c(7,11)] %>%
+  mutate(c = end_year - start_year)%>%
+  drop_na()
+mean(data$c)
+```
+
+
+
+
+
