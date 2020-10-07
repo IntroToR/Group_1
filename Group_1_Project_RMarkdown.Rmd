@@ -72,12 +72,12 @@ par(mfrow=c(1, 2))  # divide graph area in 2 columns
 
 #creating density plot for sulfur levels from NEEM
 plot(density(sulfur$neem, na.rm = TRUE), main="NEEM Sulfur Levels",
-  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$neem, na.rm = TRUE), 2)))
+  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$neem, na.rm = TRUE), 2)))+
   polygon(density(sulfur$neem, na.rm = TRUE), col="red")
 
 #creating density plot for sulfur levels from WDC
 plot(density(sulfur$wdc, na.rm = TRUE), main="WDC Sulfur levels", 
-  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$wdc, na.rm = TRUE), 2))) 
+  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$wdc, na.rm = TRUE), 2)))+ 
   polygon(density(sulfur$wdc), col="red")
   
 ```
@@ -513,4 +513,10 @@ ggplot(volcano, aes(x=evidence_category))+
   labs(x="Evidence Category", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)
+
+
+ggplot(eruptions, aes(x=longitude, y=vei))+
+  geom_count(na.rm = T)+
+  ggtitle("Volcano eruption index distributed over longitude")+
+  labs(x="Longitude", y="vei")
 ```
