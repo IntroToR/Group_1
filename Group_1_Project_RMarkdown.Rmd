@@ -35,7 +35,8 @@ ggplot(sulfur, aes(x=year, y=wdc))+
   geom_line()+
   ggtitle("Sulfur Concentration per Year from WDC Ice Cores")+
   labs(x="Year (AD)", y="Sulfur Content (ng/g)")+
-  theme(panel.grid=element_blank())   
+  theme(panel.grid=element_blank())  
+
 ```
 
 Conduct a statistical analysis such as Analysis of Variance or Linear Regression:
@@ -55,11 +56,24 @@ sulfur$neem[as.numeric(sulfur$neem)]
 boxplot(sulfur$neem, main = "Sulfur detected in ng/g from NEEM",
         xlab = "sulfur (ng/g)", horizontal = TRUE)
 
+#Boxplot for sulfur levels from NEEM created using ggplot2
+ggplot(sulfur, aes(y=neem))+
+  geom_boxplot()+
+  ggtitle("Boxplot of NEEM Sulfur Concentrations")+
+  labs(y="NEEM Sulfur Concentration (ng/g)")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
 #Boxplot for sulfur levels from WDC created using base R
 WDCsulfur <- as.numeric(sulfur$wdc)
 boxplot(sulfur$wdc, main = "Sulfur detected in ng/g from WDC",
         xlab = "sulfur (ng/g)", horizontal = TRUE)
 
+#Boxplot for sulfur levels from WDC created using ggplot2
+ggplot(sulfur, aes(y=wdc))+
+  geom_boxplot()+
+  ggtitle("Boxplot of WDC Sulfur Concentrations")+
+  labs(y="WDC Sulfur Concentration (ng/g)")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
 ```
 
 Next step is create a density plot to see if sulfur concentration follows a normal distribution at both locations (NEEM and WDC). From the density plots, we see that sulfur concentrations from NEEM and WDC follow a right skewed distribution and is non-normal
@@ -156,7 +170,6 @@ __Data Cleanup__
 First I cleaned up the data in the `primary_volcano_type` column by removing all duplicate values of plural classifiers (removed all (es) and (s)). Then I coverted this column, as well as `country`, `region`, `subregion`, `tectonic_settings`, `evidence_category`, `major_rock_.`, and `minor_rock_.` to factors. I also changed all the unknown `last_eruption_year` data with `NA` and converted those to numeric values. Finally, I arrange the data, create a new columns for years since the last eruption date using the `last_eruption_year` variable, and order the columns how I want them.
 
 ```{r}
-volcano
 volcano$primary_volcano_type<-gsub(".(es).", "", volcano$primary_volcano_type)
 volcano$primary_volcano_type<-gsub(".(s).", "", volcano$primary_volcano_type)
 volcano$primary_volcano_type<-sub("Stratovolcano.", "Stratovolcano", volcano$primary_volcano_type)
@@ -181,8 +194,70 @@ volcano<-volcano%>%
   arrange(primary_volcano_type, last_eruption_year, elevation)%>%
   mutate(years_ago=2020-last_eruption_year)
 ordered_columns<-c("volcano_number", "volcano_name", "region", "subregion", "country", "latitude", "longitude", "tectonic_settings", "primary_volcano_type", "elevation", "last_eruption_year", "years_ago", "evidence_category", "population_within_5_km","population_within_10_km","population_within_30_km","population_within_100_km", "major_rock_1","major_rock_2","major_rock_3","major_rock_4","major_rock_5","minor_rock_1","minor_rock_2","minor_rock_3","minor_rock_4","minor_rock_5")
-volcano[ordered_columns]
+volcano<-volcano[ordered_columns]
+volcano
 
+```
+
+__Summary Statistics__
+Here I compile a table of all the means of relevant numeric data from the `volcano` data set. Out of the 27 variables in this data file, I selected `elevation`, `last_eruption_year`, `years_ago`, `population_within_5_km`, `population_within_10_km`,`population_within_30_km`, and `population_within_100_km`. I first looked at overall column means for these variables and saved a file of overall means titled `"volcano_dataset_overall_means.txt"`, then I looked at means based on the `primary_volcano_type` variable. I rounded each of these to whole units. Finally, I saved a file with the means for each variable by primary volcano type, titled `"volcano_dataset_means_by_primary_volcano_type.txt"`.
+```{r}
+overall_means<-data.frame(mean(volcano$elevation),
+mean(volcano$last_eruption_year, na.rm=T),
+mean(volcano$years_ago, na.rm=T),
+mean(volcano$population_within_5_km, na.rm=T),
+mean(volcano$population_within_10_km, na.rm=T),
+mean(volcano$population_within_30_km, na.rm=T),
+mean(volcano$population_within_100_km, na.rm=T))
+names(overall_means)<-c("elevation", "last_eruption_year", "years_ago", "population_within_5_km", "population_within_10_km","population_within_30_km", "population_within_100_km")
+row.names(overall_means)<-c("overall_means")
+write.table(overall_means, "volcano_dataset_overall_means.txt")
+
+elevation_means<-volcano%>%
+  group_by(primary_volcano_type)%>%
+  summarise(mean_height = mean(elevation))
+elevation_means$mean_height<-round(elevation_means$mean_height,0)
+
+last_eruption_year_means<-volcano%>%
+  group_by(primary_volcano_type)%>%
+  summarise(mean_year = mean(last_eruption_year, na.rm=T))
+last_eruption_year_means$mean_year<-round(last_eruption_year_means$mean_year,0)
+
+years_ago<-volcano%>%
+  group_by(primary_volcano_type)%>%
+  summarise(mean_years_ago=mean(years_ago, na.rm=T))
+years_ago$mean_years_ago<-round(years_ago$mean_years_ago, 0)
+
+five_km_pop_means<-volcano%>%
+  group_by(primary_volcano_type)%>%
+  summarise(mean_5km_pop=mean(population_within_5_km, na.rm=T))
+five_km_pop_means$mean_5km_pop<-round(five_km_pop_means$mean_5km_pop, 0)
+
+ten_km_pop_means<-volcano%>%
+  group_by(primary_volcano_type)%>%
+  summarise(mean_10km_pop=mean(population_within_10_km, na.rm=T))
+ten_km_pop_means$mean_10km_pop<-round(ten_km_pop_means$mean_10km_pop, 0)
+
+thirty_km_pop_means<-volcano%>%
+  group_by(primary_volcano_type)%>%
+  summarise(mean_30km_pop=mean(population_within_30_km, na.rm=T))
+thirty_km_pop_means$mean_30km_pop<-round(thirty_km_pop_means$mean_30km_pop, 0)
+
+hundred_km_pop_means<-volcano%>%
+  group_by(primary_volcano_type)%>%
+  summarise(mean_100km_pop=mean(population_within_100_km, na.rm=T))
+hundred_km_pop_means$mean_100km_pop<-round(hundred_km_pop_means$mean_100km_pop, 0)
+
+volcano_means_table <- merge(merge(merge(merge(merge(merge(
+  elevation_means,
+  last_eruption_year_means, all=T),
+  years_ago, all=T),
+  five_km_pop_means, all=T),
+  ten_km_pop_means, all=T),
+  thirty_km_pop_means, all=T),
+  hundred_km_pop_means, all=T)
+
+write.table(volcano_means_table, "volcano_dataset_means_by_primary_volcano_type.txt")
 ```
 
 __Types of Volcanoes__
@@ -199,7 +274,7 @@ ggplot(volcano, aes(x=primary_volcano_type))+
   ggtitle("Number of Volcanos by Type")+
   labs(x="Type of Volcano", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=type_count ,aes(x=primary_volcano_type, y=no_rows1, label=no_rows1), nudge_y=30)
+  geom_text(data=type_count, aes(x=primary_volcano_type, y=no_rows1, label=no_rows1), nudge_y=30)
 ```
 
 Here I create a bar chart showing the number of volcanos in each tectonic subcategory. Here we can see that the most common tectonic setting is for subduction zone / continental crust.
@@ -213,16 +288,17 @@ ggplot(volcano, aes(x=tectonic_settings))+
   geom_bar()+
   ggtitle("Number of Volcanos by Tectonic Setting")+
   labs(x="Tectonic Setting", y="Number of Volcanos")+
-  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=tectonic_count ,aes(x=tectonic_settings, y=no_rows3, label=no_rows3), nudge_y=50)
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.95))+
+  geom_text(data=tectonic_count ,aes(x=tectonic_settings, y=no_rows3, label=no_rows3), nudge_y=50)+
+  scale_x_discrete(labels = function(tectonic_settings) str_wrap(tectonic_settings, width = 20))
 ```
 
 __Elevation__
 
-Here is a histogram showing the frequency of different volcano heights. The majority of volcanos are under 2,500 feet tall, with most being 1,000 to 1,500 feet tall.
+Here is a histogram showing the frequency of different volcano heights. The majority of volcanos are under 2,500 feet tall, with most being 1,000 to 1,500 feet tall. The data do appear to be moderately skewed to the right.
 ```{r}
 ggplot(volcano, aes(x=elevation))+
-  geom_histogram(binwidth=500)+
+  geom_histogram(binwidth=500, color="black")+
   ggtitle("Histogram of Volcano Elevations")+
   labs(x="Elevation", y="Observations")+
   theme(panel.grid=element_blank())
@@ -230,11 +306,12 @@ ggplot(volcano, aes(x=elevation))+
 
 __Means and Multiple Comparisons (Volcano Type) of Elevation__
 
-Here I am using the `car` package for the Levene's Test of Homogeneity of Variance, and the `dunn.test` package as a post hoc test for the Kruskal-Wallis test that I perform if the prerequisites for conducting an ANOVA are not met (homogeneity of variance and normal distribution of residuals). Normal distribution of residuals is evaluated using the `shapiro.test()` function.
+Here I am using the `car` package for the Levene's Test of Homogeneity of Variance. Normal distribution of residuals is evaluated using the `shapiro.test()` function. Under normal circumstances, homogeneity of variance and normality of residuals would be considered prerequisite assumptions for running an ANOVA; however, for all data, we treat the data as if the assumptions have been met, even if they are demonstrably not.
 ```{r}
 
 library(car)
-library(dunn.test)
+library(tidyverse)
+library(multcompView)
 
 mean(volcano$elevation)
 
@@ -246,17 +323,16 @@ ggplot(volcano, aes(x=elevation, y=primary_volcano_type))+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
 
+
 #Ho: All elevations are equal among volcano types.
 #HA: At least one mean elevation is different.
 model1=lm(elevation~primary_volcano_type, data=volcano)
 res_values1<-residuals(model1)
 shapiro.test(res_values1)
 leveneTest(model1)
-#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
-KW1<-kruskal.test(elevation~primary_volcano_type, data=volcano)
-#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
-DUNN1<-as.data.frame(dunn.test(volcano$elevation, g=volcano$primary_volcano_type, kw=T))
-
+#Here I am doing an ANOVA even though normal distribution of residuals and homogeneity of variance are not met.
+elevation_anova<-aov(elevation~primary_volcano_type, data=volcano)
+elevation_anova
 ```
 
 __Multiple Comparisons (Volcano Type)  of Population - 5km__
@@ -275,11 +351,8 @@ model2=lm(population_within_5_km~primary_volcano_type, data=volcano)
 res_values2<-residuals(model2)
 shapiro.test(res_values2)
 leveneTest(model2)
-#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
-KW2<-kruskal.test(population_within_5_km~primary_volcano_type, data=volcano)
-KW2
-#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
-DUNN2<-as.data.frame(dunn.test(volcano$population_within_5_km, g=volcano$primary_volcano_type, kw=T))
+five_km_anova<-aov(model2)
+five_km_anova
 ```
 
 __Multiple Comparisons of (Volcano Type) Population- 10 km__
@@ -298,11 +371,8 @@ model3=lm(population_within_10_km~primary_volcano_type, data=volcano)
 res_values3<-residuals(model3)
 shapiro.test(res_values3)
 leveneTest(model3)
-#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
-KW3<-kruskal.test(population_within_10_km~primary_volcano_type, data=volcano)
-KW3
-#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
-DUNN3<-as.data.frame(dunn.test(volcano$population_within_10_km, g=volcano$primary_volcano_type, kw=T))
+ten_km_anova<-aov(model3)
+ten_km_anova
 ```
 
 __Multiple Comparisons (Volcano Type) of Population - 30 km__
@@ -321,11 +391,8 @@ model4=lm(population_within_30_km~primary_volcano_type, data=volcano)
 res_values4<-residuals(model4)
 shapiro.test(res_values4)
 leveneTest(model4)
-#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
-KW4<-kruskal.test(population_within_30_km~primary_volcano_type, data=volcano)
-KW4
-#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
-DUNN4<-as.data.frame(dunn.test(volcano$population_within_30_km, g=volcano$primary_volcano_type, kw=T))
+thirty_km_anova<-aov(model4)
+thirty_km_anova
 ```
 
 __Multiple Comparisons (Volcano Type) of Population - 100 km__
@@ -344,16 +411,13 @@ model5=lm(population_within_100_km~primary_volcano_type, data=volcano)
 res_values5<-residuals(model5)
 shapiro.test(res_values5)
 leveneTest(model5)
-#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
-KW5<-kruskal.test(population_within_100_km~primary_volcano_type, data=volcano)
-KW5
-#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
-DUNN5<-as.data.frame(dunn.test(volcano$population_within_100_km, g=volcano$primary_volcano_type, kw=T))
+hundred_km_anova<-aov(model5)
+hundred_km_anova
 ```
 
-Here, I am showing essentially the same thing as above. I calculated the means population per volcano type and plotted them in bar graphs. This is a better representation than the boxplots above because the outliers skewed the range and caused the boxes of the boxplot to be so compressed that no real differences could be seen. However, as an important note, because these outliers were so severe, they do skew the mean values reported.
+Next, I am showing essentially the same thing as above. I calculated the mean population per volcano type and plotted them in bar graphs. This is a better representation than the boxplots above because the outliers skewed the range and caused the boxes of the boxplot to be so compressed that no real differences could be seen. Plot area could have been adjusted in `ggplot()` to cut off these outliers, but I didn't feel as if that would be truly representative of the data. A word of caution for the bar plots that follow, because the outliers were so severe, they do skew the mean values reported.
 
-```{r, figures-side, fig.show="hold", out.width="100%"}
+```{r, figures-side, fig.show="hold"}
 population_means_by_volcano_type<-group_by(volcano, primary_volcano_type) %>% 
   summarize(mean_population_within_5_km = mean(population_within_5_km), mean_population_within_10_km = mean(population_within_10_km), mean_population_within_30_km = mean(population_within_30_km), mean_population_within_100_km = mean(population_within_100_km))
 population_means_by_volcano_type[,2:5]<-round(population_means_by_volcano_type[,2:5],digits=0)
@@ -393,7 +457,7 @@ This is a histogram showing the number of volcanos that have a known eruption wi
 
 ```{r}
 ggplot(volcano, aes(x=last_eruption_year))+
-  geom_histogram(binwidth=1000)+
+  geom_histogram(binwidth=1000, color="black")+
   ggtitle("Histogram of Last Known Eruptions")+
   labs(x="Date", y="Observations")+
   theme(panel.grid=element_blank())
@@ -417,11 +481,7 @@ model6=lm(last_eruption_year~primary_volcano_type, data=volcano)
 res_values6<-residuals(model6)
 shapiro.test(res_values6)
 leveneTest(model6)
-#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
-KW6<-kruskal.test(last_eruption_year~primary_volcano_type, data=volcano)
-KW6
-#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
-DUNN6<-as.data.frame(dunn.test(volcano$last_eruption_year, g=volcano$primary_volcano_type, kw=T))
+eruption_year_anova<-aov(model6)
 ```
 
 Much like above, this analysis seeks to determine if volcanos in different tectonic settings, rather than just different volcano types, are more likely than others to erupt more frequently. Here again, the rationale is that the further down the y-axis, the longer it has been since an eruption.
@@ -440,11 +500,7 @@ model7=lm(last_eruption_year~tectonic_settings, data=volcano)
 res_values7<-residuals(model7)
 shapiro.test(res_values7)
 leveneTest(model7)
-#Normality of residuals and homogeneity of variance not met; therefore, an ANOVA cannot be perfomred. The non-parametric Kruskal-Wallis test is performed instead.
-KW7<-kruskal.test(last_eruption_year~tectonic_settings, data=volcano)
-KW7
-#Dunn's post hoc test is performed to differentiate which values significantly differ from one another.
-DUNN7<-as.data.frame(dunn.test(volcano$last_eruption_year, g=volcano$tectonic_settings, kw=T))
+eruption_tectonic_anova<-aov(model7)
 ```
 
 __Linear Regression and Correlation of Volcano Elevation with Last Known Eruption Year__
@@ -466,7 +522,7 @@ ggplot(volcano, aes(x=last_eruption_year, y=elevation))+
 ```
 
 
-___Global Volcano Locations___
+__Global Volcano Locations__
 
 Here I create a bar chart showing the number of volcanos present in various regions of the world. Since actual latitude and longitude coordinates were provided in this data file, following this regional grouping bar chart, I use the `threejs` package to plot each of the coordinates on a global map. Height of individual bars on the map represent volcano elevation, while heatmap colors indicate the number of years since the last known eruption (red = most recent, white = most distant past).
 ```{r}
@@ -513,12 +569,6 @@ ggplot(volcano, aes(x=evidence_category))+
   labs(x="Evidence Category", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)
-
-
-ggplot(eruptions, aes(x=longitude, y=vei))+
-  geom_count(na.rm = T)+
-  ggtitle("Volcano eruption index distributed over longitude")+
-  labs(x="Longitude", y="vei")
 ```
 
 __Eruptions Dataset__
