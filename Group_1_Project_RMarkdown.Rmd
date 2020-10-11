@@ -41,14 +41,32 @@ ggplot(sulfur, aes(x=year, y=wdc))+
 
 Conduct a statistical analysis such as Analysis of Variance or Linear Regression:
 
-First step is to create scatter plots to visualize a possible linear relationship between the independent and dependent variable, in this case "year" and sulfur concentration for each location. From the scatterplot it does not appear that there is a linear relationship between "year" and sulfur concentration for each location 
+First step is to create scatter plots to visualize a possible linear relationship between the independent and dependent variable: "year" vs. sulfur concentration for each location and sulfur levels at NEEM vs. WDC. 
+
+From the scatterplot it does not appear that there is a linear relationship between "year" and sulfur concentration for each location and NEEM vs. WDC
 
 ```{r}
-scatter.smooth(x=sulfur$year, y=sulfur$neem, main="year ~ neem") #scatter plot for year vs. neem
-scatter.smooth(x=sulfur$year, y=sulfur$wdc, main="year ~ wdc") #scatter plot for year vs. wdc
+#Scatter plot for Year vs. NEEM
+scatter_YearvNEEM <- ggplot(data = sulfur, aes(x = year, y= neem)) +
+                          geom_point(color = "yellow") +
+                          ylab("Sulfur detected in ng/g") +
+                          ggtitle("Sulfur detected in ng/g from NEEM") 
+
+#Scatter plot for Year vs. WDC
+scatter_YearvWDC <- ggplot(data = sulfur, aes(x = year, y= wdc)) +
+                          geom_point(color = "orange") +
+                          ylab("Sulfur detected in ng/g") +
+                          ggtitle("Sulfur detected in ng/g from WDC") 
+
+#Scatter plot for NEEM vs WDC
+scatter_NEEMvWDC <- ggplot(data = sulfur, aes(x = neem, y= wdc)) +
+                          geom_point(color = "blue") +
+                          ylab("WDC sulfur levels in ng/g") +
+                          xlab("NEEM sulfur levels in ng/g")+
+                          ggtitle("NEEM vs. WDC Sulfur Levels ") 
 ```
 
-Second step is to Create boxplots to check for outliers for the variables "neem" and "wdc" sulfur concentrations; From both boxplots we conclude that there are many outliers
+Second step is to create boxplots to check for outliers for the variables "neem" and "wdc" sulfur concentrations; From both boxplots we conclude that there are many outliers
 ```{r}
 
 #Boxplot for sulfur levels from NEEM created using base R
@@ -74,6 +92,7 @@ ggplot(sulfur, aes(y=wdc))+
   ggtitle("Boxplot of WDC Sulfur Concentrations")+
   labs(y="WDC Sulfur Concentration (ng/g)")+
   theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
 ```
 
 Next step is create a density plot to see if sulfur concentration follows a normal distribution at both locations (NEEM and WDC). From the density plots, we see that sulfur concentrations from NEEM and WDC follow a right skewed distribution and is non-normal
@@ -82,23 +101,23 @@ We will need to download the following package to create density plots:
 library(e1071)
 
 ```{r}
-par(mfrow=c(1, 2))  # divide graph area in 2 columns
+#density plot for "n_tree"
+dp_NEEM<- ggplot(sulfur, aes(x=neem))+
+              geom_density(color="yellow", fill="yellow")+
+              xlab("NEEM Sulfur Concentration (ng/g)") +
+              ggtitle("Density of Sulfur Concentrations from NEEM")
 
-#creating density plot for sulfur levels from NEEM
-plot(density(sulfur$neem, na.rm = TRUE), main="NEEM Sulfur Levels",
-  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$neem, na.rm = TRUE), 2)))+
-  polygon(density(sulfur$neem, na.rm = TRUE), col="red")
-
-#creating density plot for sulfur levels from WDC
-plot(density(sulfur$wdc, na.rm = TRUE), main="WDC Sulfur levels", 
-  ylab="Frequency", sub=paste("Skewness:", round(e1071::skewness(sulfur$wdc, na.rm = TRUE), 2)))+ 
-  polygon(density(sulfur$wdc), col="red")
+#density plot for "europe_temp_index"
+dp_WDC<- ggplot(sulfur, aes(x=wdc))+
+              geom_density(color="orange", fill="orange")+
+              xlab("WDC Sulfur Concentrations (ng/g)") +
+              ggtitle("Density of Sulfur Concentrations from WDC")
   
 ```
 
-After creating and checking the previous 3 plots, we have to test for correlation between year and sulfur concentrations in both locations.Even though the disibutions of sulfur levels appears non-normal for NEEM and WDC, we will continue to test for correlation using the Pearson's "r" for the sake of the project. Our null hypothesis is that there is no correlation between year and sulfur levels for NEEM and WDC. The alternative hypothesis is there is a correlation between year and sulfur levels for NEEM and WDC.
+After creating and checking the previous 3 plots, we have to test for correlation between year vs. sulfur concentrations in both locations and NEEM vs. WDC .Even though the disibutions of sulfur levels appears non-normal for NEEM and WDC, we will continue to test for correlation using the Pearson's "r" for the sake of the project. Our null hypothesis is that there is no correlation between year vs sulfur levels for NEEM and WDC, and NEEM vs WDC. The alternative hypothesis is there is a correlation between year vs. sulfur levels for NEEM and WDC, and NEEM vs. WDC.
 
-Both tests revealed p-levels below 0.05. We reject the null hypothesis and conclude that there is a correlation between year and sulfur levels for NEEM and WDC
+All 3 tests revealed p-levels below 0.05. We reject the null hypothesis and conclude that there is a correlation between year and sulfur levels for NEEM and WDC
 
 ```{r}
 #calculating the Pearson's "r" for sulfur levels from NEEM
@@ -111,32 +130,50 @@ cor(sulfur$year, sulfur$wdc, method = "pearson", use = "complete.obs")
 #testing if the correlation is statistically significant from 0
 cor.test(sulfur$year, sulfur$wdc, method="pearson")
 
+#calculating the Pearson's "r" for NEEM vs. WDC
+cor(sulfur$neem, sulfur$wdc, method = "pearson", use = "complete.obs")
+# testing if the correlation is statistically significant from 0
+cor.test(sulfur$neem, sulfur$wdc, method="pearson")
+
 ```
 
-Building a Linear Model - Building a linear model allows us to establish a relationship between year and sulfur levels at NEEM and WDC locations as a
-sulfur levels as a function for year. Linear models for sulfur levels at both locations are shown below:
+Building a Linear Model - Building a linear model allows us to establish a relationship between year and sulfur levels at NEEM and WDC locations in the form ofsulfur levels as a function for year. Linear models for sulfur levels at both locations are shown below:
 
 NEEM sulfur levels (ng/g) = 19.886023 - 0.005519 * year
 WDC sulfur levels (ng/g) = 21.02073 - 0.01072 * year
+WDC sulfur levels (ng/g) = 13.35411 + 0.06182 * neem (ng/g)
 
 ```{r}
-NEEM_linear_model <- lm(neem ~ year, data = sulfur) #linear model for Sulfur levels at NEEM
+#linear model for Sulfur levels at NEEM
+NEEM_linear_model <- lm(neem ~ year, data = sulfur)
 NEEM_linear_model
 
-WDC_linear_model <- lm(wdc ~ year, data = sulfur) #linear model for Sulfur levels at WDC
+#linear model for Sulfur levels at WDC
+WDC_linear_model <- lm(wdc ~ year, data = sulfur) 
 WDC_linear_model
+
+#linear model for NEEM vs. WDC
+NEEMvsWDC_linear_model <-lm(wdc~neem, data = sulfur)
+NEEMvsWDC_linear_model
 ```
 
-Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with sulfur levels at NEEM/WDC and year is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between sulfur levels at NEEM/WDC and year.Our conclusions are noted below:
+Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with year and sulfur levels at NEEM/WDC, and NEEM vs WDC is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between sulfur levels at NEEM/WDC and year, and NEEM vs. WDC.Our conclusions are noted below:
 
 p-value for the linear model for sulfur levels at NEEM was above the 0.05 threshold, we fail to reject the null hypothesis that the coefficients associated with sulfur levels at NEEM and year is equal to zero
 
 p-value for the linear model for sulfur levels at WDC was below the 0.05 threshold, we reject the null hypothesis and conclude that there is a relationship between sulfur levels at WDC and year.
 
-```{r}
-summary(NEEM_linear_model) #model summary for sulfur levels at NEEM
+p-value for the linear model for NEEM vs. WDC was below the 0.05 threshold, we reject the null hypothesis and conclude that there is a relation between sulfur levels at NEEM and WDC
 
-summary(WDC_linear_model) #model summary for sulfur levels at WDC
+```{r}
+#model summary for sulfur levels at NEEM
+summary(NEEM_linear_model) 
+
+#model summary for sulfur levels at WDC
+summary(WDC_linear_model)  
+
+#model summary for NEEM vs. WDC
+summary(NEEMvsWDC_linear_model)
 ```
 
 Saving the means of sulfur levels at NEEM and WDC as a text file
@@ -147,7 +184,7 @@ write.table(mean(sulfur$wdc, na.rm = TRUE), "wdc_mean.txt", sep = "\t")
 
 __Tree Ring Dataset__
 
-Likewise, here is just a simple line graph plotting tree ring Z-scores and European Temperature Index historical data.
+Here is just a simple line graph plotting tree ring Z-scores and European Temperature Index historical data.
 
 ```{r}
 ggplot(tree_rings, aes(x=year, y=n_tree))+
@@ -163,11 +200,139 @@ ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
   theme(panel.grid=element_blank())
 
 ```
-__Volcano Dataset__
+
+Conduct a statistical analysis such as Analysis of Variance or Linear Regression:
+
+First step is to create scatter plots to visualize a possible linear relationship between the independent and dependent variable: "year" vs. "n_tree"/"europe_temp_index", and "n_tree" vs "europe_temp_index".
+
+From the scatter plots it does not appear that there is a linear relationship between year vs. "n_tree"/"europe_temp_index". However, it seems that "n_tree" vs "europe_temp_index" follows a strong, positive linear relationship
+```{r}
+#Scatter plot for Year vs. "n_Tree"
+scatter_YearvnTree <- ggplot(data = tree_rings, aes(x = year, y= n_tree)) +
+                          geom_point(color = "green") +
+                          ylab("Tree ring z-scores relative to year = 1000-1099") +
+                          ggtitle("Tree rings z-scores vs. Year") 
+
+#Scatter plot for Year vs. "europe_temp_index"
+scatter_YearvETI <- ggplot(data = tree_rings, aes(x = year, y= europe_temp_index)) +
+                          geom_point(color = "red") +
+                          ylab("Pages 2K Temperature for Europe in Celsius") +
+                          ggtitle("Pages 2K Temperature for Europe in Celsius vs. Year") 
+
+#Scatter plot for "n_tree" vs "europe_temp_index"
+scatter_nTreevETI <- ggplot(data = tree_rings, aes(x = n_tree, y= europe_temp_index)) +
+                          geom_point(color = "blue") +
+                          ylab("Pages 2K Temperature for Europe in Celsius") +
+                          xlab("Tree ring z-scores relative to year = 1000-1099")+
+                          ggtitle("Tree ring z-scores vs. ETI in Celsius ") 
+```
+
+Second step is to create boxplots to check for outliers for the variables "n_Tree" and "europe_temp_index"; From both boxplots we conclude that there are a moderate amount of outliers
+```{r}
+#Boxplot for "n_tree"
+bp_nTree<- ggplot(tree_rings, aes(y=n_tree))+
+  geom_boxplot(fill = "green")+
+  ggtitle("Boxplot of Tree ring z-scores relative to year = 1000-1099") +
+  labs(y="Tree ring z-scores ")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
+#Boxplot for "europe_temp_index"
+bp_ETI <- ggplot(tree_rings, aes(y=europe_temp_index))+
+  geom_boxplot(fill = "red")+
+  ggtitle("Pages 2K Temperature for Europe in Celsius") +
+  labs(y="Celsius ")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
+```
+
+Next step is create a density plot to see if "n_tree" and "europe_temp_index" follows a normal distribution. From the density plots, we see that "n_tree" and "europe_temp_index" follows a normal distribution.
+
+```{r}
+#density plot for "n_tree"
+dp_ntree<- ggplot(tree_rings, aes(x=n_tree))+
+              geom_density(color="green", fill="green")+
+              xlab("Tree ring z-scores relative to year = 1000-1099") +
+              ggtitle("Density of Tree ring z-scores")
+
+#density plot for "europe_temp_index"
+dp_ntree<- ggplot(tree_rings, aes(x=europe_temp_index))+
+              geom_density(color="red", fill="red")+
+              xlab("Pages 2K Temperature for Europe in Celsius") +
+              ggtitle("Density of Pages 2K Temperature for Europe in Celsius")
+```
+
+After creating and checking the previous 3 plots, we have to test for correlation between year vs. "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index".. Our null hypothesis is that there is no correlation between year vs. "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index". The alternative hypothesis is there is a correlation between year vs. "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index".
+
+All 3 tests revealed p-levels below 0.05. We reject the null hypothesis and conclude that there is a correlation between year and "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index"
+
+```{r}
+#calculating the Pearson's "r" for year vs. "n_tree"
+cor(tree_rings$year, tree_rings$n_tree, method = "pearson", use = "complete.obs")
+#testing if the correlation is statistically significant from 0
+cor.test(tree_rings$year, tree_rings$n_tree, method="pearson")
+
+#calculating the Pearson's "r" for year vs. "europe_temp_index"
+cor(tree_rings$year, tree_rings$europe_temp_index, method = "pearson", use = "complete.obs")
+#testing if the correlation is statistically significant from 0
+cor.test(tree_rings$year, tree_rings$europe_temp_index, method="pearson")
+
+#calculating the Pearson's "r" for "n_tree" vs. "europe_temp_index"
+cor(tree_rings$n_tree, tree_rings$europe_temp_index, method = "pearson", use = "complete.obs")
+# testing if the correlation is statistically significant from 0
+cor.test(tree_rings$n_tree, tree_rings$europe_temp_index, method="pearson")
+```
+
+Building a Linear Model - Building a linear model allows us to establish a relationship between year and "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index in the form of "n_tree"/"europe_temp_index" as a function of year and "europe_temp_index" as a function of "n_tree", respectively.
+
+Linear models are shown below
+
+Tree ring z-score = -0.3668420 - -0.0001842 * year
+Pages 2K Temperature for Europe (C) = -0.0067512 - -0.0001582 * year
+Pages 2K Temperature for Europe (C) = 0.1073 + 0.4941 * Tree ring z-score
+
+```{r}
+#linear model for year vs "n_tree"
+nTree_linear_model <- lm(n_tree ~ year, data = tree_rings)
+nTree_linear_model
+
+#linear model for year vs. "europe_temp_index"
+ETI_linear_model <- lm(europe_temp_index ~ year, data = tree_rings) 
+ETI_linear_model
+
+#linear model for "n_tree" vs. "europe_temp_index
+nTreevsETI_linear_model <-lm(europe_temp_index~n_tree, data = tree_rings)
+nTreevsETI_linear_model
+
+
+```
+
+Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" WDC.
+
+
+```{r}
+#model summary for "n_tree" and year
+summary(nTree_linear_model) 
+
+#model summary for "europe_temp_index: and year
+summary(ETI_linear_model)  
+
+#model summary for "n_tree" vs. "europe_temp_index"
+summary(nTreevsETI_linear_model)
+```
+
+The appropriate p-values for all three linear models was below the 0.05 threshold. We reject the null hypothesis and conclude that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" WDC.
+
+Savings the means of "n_tree" and "europe_temp_index" as a text file:
+```{r}
+write.table(mean(tree_rings$n_tree, na.rm = TRUE), "nTree_mean.txt", sep = "\t")
+write.table(mean(tree_rings$europe_temp_index, na.rm = TRUE), "ETI_mean.txt", sep = "\t")
+```
+
+_Volcano Dataset__
 
 __Data Cleanup__
 
 First I cleaned up the data in the `primary_volcano_type` column by removing all duplicate values of plural classifiers (removed all (es) and (s)). Then I coverted this column, as well as `country`, `region`, `subregion`, `tectonic_settings`, `evidence_category`, `major_rock_.`, and `minor_rock_.` to factors. I also changed all the unknown `last_eruption_year` data with `NA` and converted those to numeric values. Finally, I arrange the data, create a new columns for years since the last eruption date using the `last_eruption_year` variable, and order the columns how I want them.
+
 
 ```{r}
 volcano$primary_volcano_type<-gsub(".(es).", "", volcano$primary_volcano_type)
@@ -196,7 +361,6 @@ volcano<-volcano%>%
 ordered_columns<-c("volcano_number", "volcano_name", "region", "subregion", "country", "latitude", "longitude", "tectonic_settings", "primary_volcano_type", "elevation", "last_eruption_year", "years_ago", "evidence_category", "population_within_5_km","population_within_10_km","population_within_30_km","population_within_100_km", "major_rock_1","major_rock_2","major_rock_3","major_rock_4","major_rock_5","minor_rock_1","minor_rock_2","minor_rock_3","minor_rock_4","minor_rock_5")
 volcano<-volcano[ordered_columns]
 volcano
-
 ```
 
 __Summary Statistics__
