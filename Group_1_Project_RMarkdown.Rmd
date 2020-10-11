@@ -305,7 +305,7 @@ nTreevsETI_linear_model
 
 ```
 
-Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" WDC.
+Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index".
 
 
 ```{r}
@@ -319,7 +319,7 @@ summary(ETI_linear_model)
 summary(nTreevsETI_linear_model)
 ```
 
-The appropriate p-values for all three linear models was below the 0.05 threshold. We reject the null hypothesis and conclude that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" WDC.
+The appropriate p-values for all three linear models was below the 0.05 threshold. We reject the null hypothesis and conclude that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index".
 
 Savings the means of "n_tree" and "europe_temp_index" as a text file:
 ```{r}
