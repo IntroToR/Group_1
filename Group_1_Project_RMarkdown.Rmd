@@ -101,13 +101,13 @@ We will need to download the following package to create density plots:
 library(e1071)
 
 ```{r}
-#density plot for "n_tree"
+#density plot for NEEM
 dp_NEEM<- ggplot(sulfur, aes(x=neem))+
               geom_density(color="yellow", fill="yellow")+
               xlab("NEEM Sulfur Concentration (ng/g)") +
               ggtitle("Density of Sulfur Concentrations from NEEM")
 
-#density plot for "europe_temp_index"
+#density plot for WDC
 dp_WDC<- ggplot(sulfur, aes(x=wdc))+
               geom_density(color="orange", fill="orange")+
               xlab("WDC Sulfur Concentrations (ng/g)") +
@@ -312,7 +312,7 @@ Checking if our linear model is statistically significant - The null hypothesis 
 #model summary for "n_tree" and year
 summary(nTree_linear_model) 
 
-#model summary for "europe_temp_index: and year
+#model summary for "europe_temp_index" and year
 summary(ETI_linear_model)  
 
 #model summary for "n_tree" vs. "europe_temp_index"
@@ -327,7 +327,7 @@ write.table(mean(tree_rings$n_tree, na.rm = TRUE), "nTree_mean.txt", sep = "\t")
 write.table(mean(tree_rings$europe_temp_index, na.rm = TRUE), "ETI_mean.txt", sep = "\t")
 ```
 
-_Volcano Dataset__
+__Volcano Dataset__
 
 __Data Cleanup__
 
