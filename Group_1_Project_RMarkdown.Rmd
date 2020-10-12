@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The data set that we have chosen to work with is the "Volcano Eruptions" data set, coming from Week 20 of the 2020 TidyTuesday project. This data is provided by the Smithsonian Institute. The data, which is split into five files (`volcano`, `eruptions`, `events`, `tree_rings`, and `sulfur`) and can be read in using the following code:
+The data set that we have chosen to work with is the "Volcano Eruptions" data set, coming from Week 20 of the 2020 TidyTuesday project. This data is provided by the Smithsonian Institute. The data, which is split into five files (`volcano`, `eruptions`, `events`, `tree_rings`, and `sulfur`) and can be read in using the first half of the following code. Following that, we created the file paths to save various data sets, figures, and summary tables. Finally, we saved each of these files within the actual `Data_Sets` file on GitHub using the second half of code.
 
 ```{r}
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
@@ -17,14 +17,35 @@ eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/
 events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
 tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
 sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
+
+data_sets_path<-"C:/Users/mrunyon2/Documents/Classes/Fall 2020/CPSC 441/Group_1/Data_Sets"
+figure_path<-"C:/Users/mrunyon2/Documents/Classes/Fall 2020/CPSC 441/Group_1/Figures"
+summary_text_path<-"C:/Users/mrunyon2/Documents/Classes/Fall 2020/CPSC 441/Group_1/Summary_Text_files"
+
+write.table(volcano, file.path(data_sets_path, "volcano.txt"))
+write.table(eruptions, file.path(data_sets_path, "eruptions.txt"))
+write.table(events, file.path(data_sets_path, "events.txt"))
+write.table(tree_rings, file.path(data_sets_path, "tree_rings.txt"))
+write.table(sulfur, file.path(data_sets_path, "sulfur.txt"))
 ```
-__Sulfur Concentration Dataset__test
+
+__Loading Relevant Packages__
+
+Here we load all of the relevant packages that will be used with our project. This ensures that all packages will be loaded at the start so that there is no redundancy within the code.
+```{r}
+library(tidyverse)
+library(e1071)
+library(car)
+library(ggpubr)
+library(multcompView)
+library(threejs)
+```
+
+__Sulfur Concentration Dataset__
 
 Here is just a simple line graph plotting sulfur concentration in ice cores across years of deposition.
 
 ```{r}
-library(tidyverse)
-
 ggplot(sulfur, aes(x=year, y=neem))+
   geom_line()+
   ggtitle("Sulfur Concentration per Year from NEEM Ice Cores")+
@@ -70,7 +91,7 @@ Second step is to create boxplots to check for outliers for the variables "neem"
 ```{r}
 
 #Boxplot for sulfur levels from NEEM created using base R
-sulfur$neem[as.numeric(sulfur$neem)]
+sulfur$neem<-as.numeric(sulfur$neem)
 boxplot(sulfur$neem, main = "Sulfur detected in ng/g from NEEM",
         xlab = "sulfur (ng/g)", horizontal = TRUE)
 
@@ -329,7 +350,9 @@ write.table(mean(tree_rings$europe_temp_index, na.rm = TRUE), "ETI_mean.txt", se
 
 __Volcano Dataset__
 
-__Data Cleanup__
+The volcano data set contains multiple variables related to characteristics of known volcanos around the world. Some variables specify volcano location, such as `country`, `region`,`subregion`, `latitude`, and `longitude`. Other variables specify features of the volcano, such as `primary_volcano_type`, `tectonic_settings`, `elevation`, `last_eruption_year`, and various kinds of rock types that are characteristic of that volcano. Finally, human populations within 5, 10, 30, and 100 km of each volcano are provided.
+
+___Data Cleanup___
 
 First I cleaned up the data in the `primary_volcano_type` column by removing all duplicate values of plural classifiers (removed all (es) and (s)). Then I coverted this column, as well as `country`, `region`, `subregion`, `tectonic_settings`, `evidence_category`, `major_rock_.`, and `minor_rock_.` to factors. I also changed all the unknown `last_eruption_year` data with `NA` and converted those to numeric values. Finally, I arrange the data, create a new columns for years since the last eruption date using the `last_eruption_year` variable, and order the columns how I want them.
 
@@ -361,9 +384,11 @@ volcano<-volcano%>%
 ordered_columns<-c("volcano_number", "volcano_name", "region", "subregion", "country", "latitude", "longitude", "tectonic_settings", "primary_volcano_type", "elevation", "last_eruption_year", "years_ago", "evidence_category", "population_within_5_km","population_within_10_km","population_within_30_km","population_within_100_km", "major_rock_1","major_rock_2","major_rock_3","major_rock_4","major_rock_5","minor_rock_1","minor_rock_2","minor_rock_3","minor_rock_4","minor_rock_5")
 volcano<-volcano[ordered_columns]
 volcano
+write.table(volcano, file.path(data_sets_path,"updated_volcano_data_set.txt"))
 ```
 
-__Summary Statistics__
+___Summary Statistics___
+
 Here I compile a table of all the means of relevant numeric data from the `volcano` data set. Out of the 27 variables in this data file, I selected `elevation`, `last_eruption_year`, `years_ago`, `population_within_5_km`, `population_within_10_km`,`population_within_30_km`, and `population_within_100_km`. I first looked at overall column means for these variables and saved a file of overall means titled `"volcano_dataset_overall_means.txt"`, then I looked at means based on the `primary_volcano_type` variable. I rounded each of these to whole units. Finally, I saved a file with the means for each variable by primary volcano type, titled `"volcano_dataset_means_by_primary_volcano_type.txt"`.
 ```{r}
 overall_means<-data.frame(mean(volcano$elevation),
@@ -375,7 +400,7 @@ mean(volcano$population_within_30_km, na.rm=T),
 mean(volcano$population_within_100_km, na.rm=T))
 names(overall_means)<-c("elevation", "last_eruption_year", "years_ago", "population_within_5_km", "population_within_10_km","population_within_30_km", "population_within_100_km")
 row.names(overall_means)<-c("overall_means")
-write.table(overall_means, "volcano_dataset_overall_means.txt")
+write.table(overall_means, file.path(summary_text_path, "volcano_dataset_overall_means.txt"))
 
 elevation_means<-volcano%>%
   group_by(primary_volcano_type)%>%
@@ -420,11 +445,10 @@ volcano_means_table <- merge(merge(merge(merge(merge(merge(
   ten_km_pop_means, all=T),
   thirty_km_pop_means, all=T),
   hundred_km_pop_means, all=T)
-
-write.table(volcano_means_table, "volcano_dataset_means_by_primary_volcano_type.txt")
+write.table(volcano_means_table, file.path(summary_text_path, "volcano_dataset_means_by_primary_volcano_type.txt"))
 ```
 
-__Types of Volcanoes__
+___Types of Volcanoes___
 
 Here I create a bar chart to show the types of volcanos present among the provided data. Based on this chart, we can see that, by a large margin, stratovolcanos are the most common type of volcano.
 
@@ -438,7 +462,8 @@ ggplot(volcano, aes(x=primary_volcano_type))+
   ggtitle("Number of Volcanos by Type")+
   labs(x="Type of Volcano", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=type_count, aes(x=primary_volcano_type, y=no_rows1, label=no_rows1), nudge_y=30)
+  geom_text(data=type_count, aes(x=primary_volcano_type, y=no_rows1, label=no_rows1), nudge_y=30)+
+  ggsave(file.path(figure_path,"volcano_count_by_type.pdf"))
 ```
 
 Here I create a bar chart showing the number of volcanos in each tectonic subcategory. Here we can see that the most common tectonic setting is for subduction zone / continental crust.
@@ -454,10 +479,11 @@ ggplot(volcano, aes(x=tectonic_settings))+
   labs(x="Tectonic Setting", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.95))+
   geom_text(data=tectonic_count ,aes(x=tectonic_settings, y=no_rows3, label=no_rows3), nudge_y=50)+
-  scale_x_discrete(labels = function(tectonic_settings) str_wrap(tectonic_settings, width = 20))
+  scale_x_discrete(labels = function(tectonic_settings) str_wrap(tectonic_settings, width = 20))+
+   ggsave(file.path(figure_path, "volcano_count_by_tectonic_setting.pdf"))
 ```
 
-__Elevation__
+___Elevation___
 
 Here is a histogram showing the frequency of different volcano heights. The majority of volcanos are under 2,500 feet tall, with most being 1,000 to 1,500 feet tall. The data do appear to be moderately skewed to the right.
 ```{r}
@@ -465,18 +491,14 @@ ggplot(volcano, aes(x=elevation))+
   geom_histogram(binwidth=500, color="black")+
   ggtitle("Histogram of Volcano Elevations")+
   labs(x="Elevation", y="Observations")+
-  theme(panel.grid=element_blank())
+  theme(panel.grid=element_blank())+
+  ggsave(file.path(figure_path, "volcano_elevation_histogram.pdf"))
 ```
 
-__Means and Multiple Comparisons (Volcano Type) of Elevation__
+___Means and Multiple Comparisons of Elevation by Volcano Type___
 
 Here I am using the `car` package for the Levene's Test of Homogeneity of Variance. Normal distribution of residuals is evaluated using the `shapiro.test()` function. Under normal circumstances, homogeneity of variance and normality of residuals would be considered prerequisite assumptions for running an ANOVA; however, for all data, we treat the data as if the assumptions have been met, even if they are demonstrably not.
 ```{r}
-
-library(car)
-library(tidyverse)
-library(multcompView)
-
 mean(volcano$elevation)
 
 ggplot(volcano, aes(x=elevation, y=primary_volcano_type))+
@@ -485,7 +507,8 @@ ggplot(volcano, aes(x=elevation, y=primary_volcano_type))+
   labs(x="Elevation (Meters above Sea Level)", y="Volcano Type")+
   coord_flip()+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
+  ggsave(file.path(figure_path, "elevation_by_type_boxplot.pdf"))
 
 
 #Ho: All elevations are equal among volcano types.
@@ -495,11 +518,11 @@ res_values1<-residuals(model1)
 shapiro.test(res_values1)
 leveneTest(model1)
 #Here I am doing an ANOVA even though normal distribution of residuals and homogeneity of variance are not met.
-elevation_anova<-aov(elevation~primary_volcano_type, data=volcano)
-elevation_anova
+elevation_anova<-aov(model1)
+summary(elevation_anova)
 ```
 
-__Multiple Comparisons (Volcano Type)  of Population - 5km__
+___Multiple Comparisons (Volcano Type)  of Population - 5km___
 ```{r}
 ggplot(volcano, aes(x=population_within_5_km, y=primary_volcano_type))+
   geom_boxplot()+
@@ -507,7 +530,8 @@ ggplot(volcano, aes(x=population_within_5_km, y=primary_volcano_type))+
   labs(x="Population", y="Volcano Type")+
   coord_flip()+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
+  ggsave(file.path(figure_path, "5km_pop_by_type_boxplot.pdf"))
 
 #Ho: All populations are equal among volcano types
 #HA: At least one mean population is different
@@ -516,10 +540,10 @@ res_values2<-residuals(model2)
 shapiro.test(res_values2)
 leveneTest(model2)
 five_km_anova<-aov(model2)
-five_km_anova
+summary(five_km_anova)
 ```
 
-__Multiple Comparisons of (Volcano Type) Population- 10 km__
+___Multiple Comparisons of (Volcano Type) Population - 10 km___
 ```{r}
 ggplot(volcano, aes(x=population_within_10_km, y=primary_volcano_type))+
   geom_boxplot()+
@@ -527,7 +551,8 @@ ggplot(volcano, aes(x=population_within_10_km, y=primary_volcano_type))+
   labs(x="Population", y="Volcano Type")+
   coord_flip()+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
+  ggsave(file.path(figure_path, "10km_pop_by_type_boxplot.pdf"))
 
 #Ho: All populations are equal among volcano types
 #HA: At least one mean population is different
@@ -536,10 +561,10 @@ res_values3<-residuals(model3)
 shapiro.test(res_values3)
 leveneTest(model3)
 ten_km_anova<-aov(model3)
-ten_km_anova
+summary(ten_km_anova)
 ```
 
-__Multiple Comparisons (Volcano Type) of Population - 30 km__
+___Multiple Comparisons (Volcano Type) of Population - 30 km___
 ```{r}
 ggplot(volcano, aes(x=population_within_30_km, y=primary_volcano_type))+
   geom_boxplot()+
@@ -547,7 +572,8 @@ ggplot(volcano, aes(x=population_within_30_km, y=primary_volcano_type))+
   labs(x="Population", y="Volcano Type")+
   coord_flip()+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
+  ggsave(file.path(figure_path, "30km_pop_by_type_boxplot.pdf"))
 
 #Ho: All populations are equal among volcano types
 #HA: At least one mean population is different
@@ -556,10 +582,10 @@ res_values4<-residuals(model4)
 shapiro.test(res_values4)
 leveneTest(model4)
 thirty_km_anova<-aov(model4)
-thirty_km_anova
+summary(thirty_km_anova)
 ```
 
-__Multiple Comparisons (Volcano Type) of Population - 100 km__
+___Multiple Comparisons (Volcano Type) of Population - 100 km___
 ```{r}
 ggplot(volcano, aes(x=population_within_100_km, y=primary_volcano_type))+
   geom_boxplot()+
@@ -567,7 +593,8 @@ ggplot(volcano, aes(x=population_within_100_km, y=primary_volcano_type))+
   labs(x="Population", y="Volcano Type")+
   coord_flip()+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
+  ggsave(file.path(figure_path, "100km_pop_by_type_boxplot.pdf"))
 
 #Ho: All populations are equal among volcano types
 #HA: At least one mean population is different
@@ -576,11 +603,10 @@ res_values5<-residuals(model5)
 shapiro.test(res_values5)
 leveneTest(model5)
 hundred_km_anova<-aov(model5)
-hundred_km_anova
+summary(hundred_km_anova)
 ```
 
 Next, I am showing essentially the same thing as above. I calculated the mean population per volcano type and plotted them in bar graphs. This is a better representation than the boxplots above because the outliers skewed the range and caused the boxes of the boxplot to be so compressed that no real differences could be seen. Plot area could have been adjusted in `ggplot()` to cut off these outliers, but I didn't feel as if that would be truly representative of the data. A word of caution for the bar plots that follow, because the outliers were so severe, they do skew the mean values reported.
-
 ```{r, figures-side, fig.show="hold"}
 population_means_by_volcano_type<-group_by(volcano, primary_volcano_type) %>% 
   summarize(mean_population_within_5_km = mean(population_within_5_km), mean_population_within_10_km = mean(population_within_10_km), mean_population_within_30_km = mean(population_within_30_km), mean_population_within_100_km = mean(population_within_100_km))
@@ -591,43 +617,47 @@ ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_popu
   ggtitle("Mean Population Living within 5km of Volcanos by Volcano Type")+
   labs(x="Volcano Type", y="Mean Population within 5km")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_5_km, label=mean_population_within_5_km), nudge_y=10000, size=3)
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_5_km, label=mean_population_within_5_km), nudge_y=10000, size=3)+
+  ggsave(file.path(figure_path, "mean_5km_pop_by_type_barplot.pdf"))
 
 ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_10_km))+
   geom_col()+
   ggtitle("Mean Population Living within 10km of Volcanos by Volcano Type")+
   labs(x="Volcano Type", y="Mean Population within 10km")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_10_km, label=mean_population_within_10_km), nudge_y=10000, size=3)
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_10_km, label=mean_population_within_10_km), nudge_y=10000, size=3)+
+  ggsave(file.path(figure_path, "mean_10km_pop_by_type_barplot.pdf"))
 
 ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_30_km))+
   geom_col()+
   ggtitle("Mean Population Living within 30km of Volcanos by Volcano Type")+
   labs(x="Volcano Type", y="Mean Population within 30km")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_30_km, label=mean_population_within_30_km), nudge_y=25000, size=3)
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_30_km, label=mean_population_within_30_km), nudge_y=25000, size=3)+
+  ggsave(file.path(figure_path, "mean_30km_pop_by_type_barplot.pdf"))
 
 ggplot(population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_100_km))+
   geom_col()+
   ggtitle("Mean Population Living within 100km of Volcanos by Volcano Type")+
   labs(x="Volcano Type", y="Mean Population within 100km")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_100_km, label=mean_population_within_100_km), nudge_y=175000, size=3)
+  geom_text(data=population_means_by_volcano_type, aes(x=primary_volcano_type, y=mean_population_within_100_km, label=mean_population_within_100_km), nudge_y=175000, size=3)+
+ggsave(file.path(figure_path, "mean_100km_pop_by_type_barplot.pdf"))
 ```
 
-__Eruption Dates__
+___Eruption Dates___
 
 This is a histogram showing the number of volcanos that have a known eruption within a certian number of years in the past. Currently, the bin width is set at 1,000 years. However, this doesn't discriminate well for the most recent years. Something needs to be done to split up the more recent and the older data.
-
 ```{r}
 ggplot(volcano, aes(x=last_eruption_year))+
   geom_histogram(binwidth=1000, color="black")+
   ggtitle("Histogram of Last Known Eruptions")+
   labs(x="Date", y="Observations")+
-  theme(panel.grid=element_blank())
+  theme(panel.grid=element_blank())+
+  ggsave(file.path(figure_path, "last_eruption_year_histogram.pdf"))
 ```
 
-__Multiple Comparisons - Last Known Eruption__
+___Multiple Comparisons - Last Known Eruption___
 
 This analysis seeks to determine whether or not certain types of volcanoes are more likely to erupt than others based on their last known eruption date. In this boxplot, the further down the y-axis, the longer it has been since an eruption.
 ```{r}
@@ -637,7 +667,8 @@ ggplot(volcano, aes(x=last_eruption_year, y=primary_volcano_type))+
   labs(x="Year", y="Volcano Type")+
   coord_flip()+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
+   ggsave(file.path(figure_path, "eruption_year_by_type_boxplot.pdf"))
 
 #Ho: Mean last eruption year is equal among all volcano types
 #HA: At least one mean eruption year is not equal
@@ -646,6 +677,7 @@ res_values6<-residuals(model6)
 shapiro.test(res_values6)
 leveneTest(model6)
 eruption_year_anova<-aov(model6)
+summary(eruption_year_anova)
 ```
 
 Much like above, this analysis seeks to determine if volcanos in different tectonic settings, rather than just different volcano types, are more likely than others to erupt more frequently. Here again, the rationale is that the further down the y-axis, the longer it has been since an eruption.
@@ -656,7 +688,8 @@ ggplot(volcano, aes(x=last_eruption_year, y=tectonic_settings))+
   labs(x="Year", y="Tectonic Setting")+
   coord_flip()+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")
+  stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
+   ggsave(file.path(figure_path, "last_eruption_year_by_tectonic_setting.pdf"))
 
 #Ho: Mean last eruption year is equal among all tectonic settings.
 #HA: At least one mean eruption year is not equal.
@@ -665,28 +698,28 @@ res_values7<-residuals(model7)
 shapiro.test(res_values7)
 leveneTest(model7)
 eruption_tectonic_anova<-aov(model7)
+summary(eruption_tectonic_anova)
 ```
 
-__Linear Regression and Correlation of Volcano Elevation with Last Known Eruption Year__
+___Linear Regression and Correlation of Volcano Elevation with Last Known Eruption Year___
 
 Here, a reasonable assumption that could be made about volcanos is that ones that erupt more frequently are taller because they are adding more layers of molten rock to their outer surface. To test this assumption, I performed linear regression analysis between last known eruption year and elevation. Based on the results, we can conclude that there is no significant linear relationship between elevation and last known eruption date.
 ```{r}
 #Ho: Slope = 0 (no linear relationship)
 #HA: Slope not equal to 0 (linear relationship)
 
-library(ggpubr)
-
 ggplot(volcano, aes(x=last_eruption_year, y=elevation))+
   geom_point(alpha=1/5)+
   ggtitle("Last Eruption Year vs Elevation")+
   labs(x="Year", y="Elevation")+
   theme(panel.grid=element_blank())+
-  stat_cor()
+  stat_cor()+
+  ggsave(file.path(figure_path, "elevation_vs_eruption_year_correlation.pdf"))
 
 ```
 
 
-__Global Volcano Locations__
+___Global Volcano Locations___
 
 Here I create a bar chart showing the number of volcanos present in various regions of the world. Since actual latitude and longitude coordinates were provided in this data file, following this regional grouping bar chart, I use the `threejs` package to plot each of the coordinates on a global map. Height of individual bars on the map represent volcano elevation, while heatmap colors indicate the number of years since the last known eruption (red = most recent, white = most distant past).
 ```{r}
@@ -699,7 +732,8 @@ ggplot(volcano, aes(x=region))+
   ggtitle("Number of Volcanos by Region")+
   labs(x="Region", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=region_count ,aes(x=region, y=no_rows2, label=no_rows2), nudge_y=10)
+  geom_text(data=region_count ,aes(x=region, y=no_rows2, label=no_rows2), nudge_y=10)+
+  ggsave(file.path(figure_path, "volcano_count_by_region.pdf"))
 
 library(threejs)
 
@@ -719,9 +753,9 @@ s6<-volcano%>%filter(latitude >=66.5 & latitude <=90)
 
 ```
 
-__Areas that Need More Work before Project Submission__
+__Volcanos by Evidence Category__
 
-Here is a bar chart showing how many volcanos have different types of known evidence of past eruptions. 
+Here is a bar chart showing how many volcanos have different types of known evidence of past eruptions. Here, we can see that most volcano eruptions have been observed. However, a sizable number have also been dated using various dating methods. Others, while not directly observed or dated, do have credible evidence. Comparatively, relatively few have uncertain eruption evidence.
 ```{r}
 evidence_count<-volcano %>% 
   group_by(evidence_category) %>%
@@ -732,16 +766,11 @@ ggplot(volcano, aes(x=evidence_category))+
   ggtitle("Number of Volcanos by Evidence Category")+
   labs(x="Evidence Category", y="Number of Volcanos")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
-  geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)
+  geom_text(data=evidence_count ,aes(x=evidence_category, y=no_rows4, label=no_rows4), nudge_y=30)+
+   ggsave(file.path(figure_path, "volcano_count_by_evidence.pdf"))
 ```
 
 __Eruptions Dataset__
-
-```{r}
-library(ggplot2)
-library(dplyr)
-library(tidyverse)
-```
 
 ```{r}
 #simple histogram showing the number of eruptions of differing intesities
