@@ -785,8 +785,3 @@ ggplot(eruptions2, aes(x=evidence_method_dating))+
   labs(x="Evidence Dating Methods", y="Number of Eruptions")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))
 ```
-
-```{r}
-earth <- "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/A_large_blank_world_map_with_oceans_marked_in_blue.PNG/1280px-A_large_blank_world_map_with_oceans_marked_in_blue.PNG"
-globejs(img = earth, lat=eruptions$latitude, long=eruptions$longitude, value = eruptions$vei)
-```
