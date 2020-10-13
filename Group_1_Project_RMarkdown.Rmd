@@ -1,7 +1,7 @@
 ---
 title: "Group_1_Project"
 author: "Matthew Runyon, Winston Wong, & Leo D'Agostino"
-date: "10/3/2020"
+date: "10/16/2020"
 output: html_document
 ---
 
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The data set that we have chosen to work with is the "Volcano Eruptions" data set, coming from Week 20 of the 2020 TidyTuesday project. This data is provided by the Smithsonian Institute. The data, which is split into five files (`volcano`, `eruptions`, `events`, `tree_rings`, and `sulfur`) and can be read in using the first half of the following code. Following that, we created the file paths to save various data sets, figures, and summary tables. Finally, we saved each of these files within the actual `Data_Sets` file on GitHub using the second half of code.
+The data set that we have chosen to work with is the "Volcano Eruptions" data set, coming from Week 20 of the 2020 TidyTuesday project. This data is provided by the Smithsonian Institute. The data, which is split into five files (`volcano`, `eruptions`, `events`, `tree_rings`, and `sulfur`) and can be read in using the first half of the following code. Following that, we created the file paths to save various data sets, figures, and summary tables. Finally, we saved each of these files within the actual `Data_Sets` file on GitHub using the second half of code. As far as responsibilities for each of these files, Winston was responsible for data analysis on the `tree_rings` and `sulfur` data sets, Leo was responsible for investigating the `eruptions` data set, and Matthew was responsible for analyzing the `volcano` data set. Everyone provided assistance across data sets with code formatting to bolster the appearance after preliminary analyses had been completed independently. We chose not to delve into the `events` file because it was mainly date information without many other important variables to work with.
 
 ```{r}
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
@@ -34,39 +34,149 @@ __Loading Relevant Packages__
 Here we load all of the relevant packages that will be used with our project. This ensures that all packages will be loaded at the start so that there is no redundancy within the code.
 ```{r}
 library(tidyverse)
-library(e1071)
 library(car)
 library(ggpubr)
 library(multcompView)
 library(threejs)
+library(qwraps2)
 ```
 
 __Sulfur Concentration Dataset__
 
-Here is just a simple line graph plotting sulfur concentration in ice cores across years of deposition.
+The sulfur concentration data set contains three variables. Two are sulfur content in ng/g collected from NEEM and WDC ice cores, which were collected from Greenland and Antarctica, respectively. These are treated as the response variables. The independent variable is the year, which is approximated as the time that the sulfur depositions took place.
 
+___Summary Statistics and Means___
+
+First, we are presenting summary statistics of this data. This is done by constructing a summary table based on the `qwraps2` package. Then, we save the means of the data set in a separate text file using the code below. Since there are only two numeric variables in this data set, this is not a large file on its own.
+```{r}
+sulfur_summary <-
+  list("NEEM" =
+       list("min_neem"       = ~ min(sulfur$neem, na.rm=T),
+            "max_neem"       = ~ max(sulfur$neem, na.rm=T),
+            "median_neem"    = ~ median(sulfur$neem, na.rm=T),
+            "mean_neem"      = ~ mean(sulfur$neem, na.rm=T),
+            "variance_neem"  = ~ var(sulfur$neem, na.rm=T),
+            "stdev_neem"     = ~ sd(sulfur$neem, na.rm=T)),
+       "WDC" =
+       list("min_wdc"       = ~ min(sulfur$wdc, na.rm=T),
+            "max_wdc"       = ~ max(sulfur$wdc, na.rm=T),
+            "median_wdc"    = ~ median(sulfur$wdc, na.rm=T),
+            "mean_wdc"      = ~ mean(sulfur$wdc, na.rm=T),
+            "variance_wdc"  = ~ var(sulfur$wdc, na.rm=T),
+            "stdev_wdc"     = ~ sd(sulfur$wdc, na.rm=T))
+       )
+sulfur_summary_table<-as.data.frame(summary_table(sulfur, summaries=sulfur_summary))
+sulfur_summary_table
+
+sulfur_means<-data.frame(mean(sulfur$neem, na.rm=T), mean(sulfur$wdc, na.rm=T))
+names(sulfur_means)<-c("NEEM_mean", "WDC_mean")
+row.names(sulfur_means)<-c("overall_mean_sulfur_content")
+write.table(sulfur_means, file.path(summary_text_path, "sulfur_dataset_overall_means.txt"))
+```
+
+Plotted below is a simple line graph showing sulfur concentration in ice cores across years of deposition. We can see several major spikes in sulfur content, which are indicative of volcanic eruptions that have sent high-sulfur ash into the air. Notable peaks in the NEEM core data are around 525 AD, 540 AD, 575 AD, 625 AD, and 685 AD, while notable peaks in the WDC core data are around 550 AD, 575 AD, and 685 AD. For several of these major peaks, there appears to be overlap between the data sets. This is particularly interesting because these would signify major volcanic eruptions, as cores were pulled from ice samples near poles at opposite ends of the world.
 ```{r}
 ggplot(sulfur, aes(x=year, y=neem))+
   geom_line()+
   ggtitle("Sulfur Concentration per Year from NEEM Ice Cores")+
   labs(x="Year (AD)", y="Sulfur Content (ng/g)")+
-  theme(panel.grid=element_blank())
+  theme(panel.grid=element_blank())+
+  ggsave(file.path(figure_path, "neem_sulfur_across_years.pdf"))
 
 ggplot(sulfur, aes(x=year, y=wdc))+
   geom_line()+
   ggtitle("Sulfur Concentration per Year from WDC Ice Cores")+
   labs(x="Year (AD)", y="Sulfur Content (ng/g)")+
-  theme(panel.grid=element_blank())  
-
+  theme(panel.grid=element_blank())+
+  ggsave(file.path(figure_path, "wdc_sulfur_across_years.pdf"))
 ```
 
-Conduct a statistical analysis such as Analysis of Variance or Linear Regression:
+___Linear Regression Analysis of Sulfur Content vs. Year and NEEM vs WDC Sulfur Content___
 
-First step is to create scatter plots to visualize a possible linear relationship between the independent and dependent variable: "year" vs. sulfur concentration for each location and sulfur levels at NEEM vs. WDC. 
+Here, we conduct linear regression to evaluate whether there is a significant linear relationship between year and sulfur content in either of the two locations.
 
-From the scatterplot it does not appear that there is a linear relationship between "year" and sulfur concentration for each location and NEEM vs. WDC
-
+First we will construct the model, then we will evaluate the assumptions to see if building that model is appropriate for this data set. Building a linear model allows us to establish a relationship between year and sulfur levels at NEEM and WDC locations in the form of sulfur levels as a function for year. Null and alternative hypotheses for each of the models are provided, followed by linear models themselves for sulfur levels at both locations are shown below. Slope and intercept values are provided upon calling the model.
 ```{r}
+#Linear model for Sulfur levels at NEEM
+#Ho: Slope = 0 (no linear relationship)
+#HA: Slope not equal to 0 (linear relationship)
+NEEM_linear_model <- lm(neem ~ year, data = sulfur)
+NEEM_linear_model
+
+#Linear model for Sulfur levels at WDC
+#Ho: Slope = 0 (no linear relationship)
+#HA: Slope not equal to 0 (linear relationship)
+WDC_linear_model <- lm(wdc ~ year, data = sulfur) 
+WDC_linear_model
+
+#Linear model for NEEM vs. WDC
+#Ho: Slope = 0 (no linear relationship)
+#HA: Slope not equal to 0 (linear relationship)
+NEEMvsWDC_linear_model <-lm(wdc~neem, data = sulfur)
+NEEMvsWDC_linear_model
+```
+
+After forming these three linear models, we can to test for correlation between year vs. sulfur concentrations in both locations and correlation between NEEM and WDC sulfur content. We will  test for correlation using the Pearson's "r". Based off of these values, we can conclude that there is an extremely week linear correlation among the variables of interest.
+```{r}
+#Year vs NEEM
+cor(sulfur$year, sulfur$neem, method = "pearson", use = "complete.obs")
+
+#Year vs WDC
+cor(sulfur$year, sulfur$wdc, method = "pearson", use = "complete.obs")
+
+#NEEM vs WDC
+cor(sulfur$neem, sulfur$wdc, method = "pearson", use = "complete.obs")
+```
+
+By running the `summary()` below function, we can determine the significance of our models. Our conclusions are noted as follows:
+
+1) Year vs NEEM: p = 0.36. At alpha = 0.05, we fail to reject the null hypothesis and conclude that no significant linear relationship exists between year and NEEM sulfur content.
+
+2) Year vs WDC: p = 0.0003. At alpha = 0.05, we reject the null hypothesis and conclude that there is a significant linear relationship between year and WDC sulfur content.
+
+3) NEEM vs WDC: p = 3.2 x 10E-8. At alpha = 0.05, we reject the null hypothesis and conclude that there is a significant linear relationship between sulfur content at NEEM and WDC.
+```{r}
+#model summary for sulfur levels at NEEM
+summary(NEEM_linear_model) 
+
+#model summary for sulfur levels at WDC
+summary(WDC_linear_model)  
+
+#model summary for NEEM vs. WDC
+summary(NEEMvsWDC_linear_model)
+```
+
+Now that we have constructed models and determined that a linear relationship was observed for two of the three models, we need to test the assumptions to determine whether linear regression was appropriate for this data. We can first create scatter plots to visualize a possible linear relationship between the independent and dependent variables. From the scatterplot it does not appear that there is a linear relationship between year and sulfur concentration at each location. Under normal circumstances, we would conclude that linear regression is inappropriate because there doesn't appear to be visual linear trend; nonetheless, for demonstration purposes, we are continuing with the process. We demonstrate the correlation coefficient and significance level on the charts using the `stat_cor()` function from the `ggpubr` package, as well as a confidence interval using the `geom_smooth()` function. We will continue to check the assumptions for demonstration purposes.
+```{r}
+ggplot(sulfur, aes(x=year, y=neem))+
+  geom_point(alpha=1/5)+
+  ggtitle("Year vs NEEM Sulfur Content (ng/g)")+
+  labs(x="Year", y="NEEM Sulfur Content (ng/g)")+
+  theme(panel.grid=element_blank())+
+  stat_cor()+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
+  ggsave(file.path(figure_path, "year_vs_neem_correlation.pdf"))
+
+ggplot(sulfur, aes(x=year, y=wdc))+
+  geom_point(alpha=1/5)+
+  ggtitle("Year vs WDC Sulfur Content (ng/g)")+
+  labs(x="Year", y="WDC Sulfur Content (ng/g)")+
+  theme(panel.grid=element_blank())+
+  stat_cor()+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
+  ggsave(file.path(figure_path, "year_vs_wdc_correlation.pdf"))
+
+ggplot(sulfur, aes(x=neem, y=wdc))+
+  geom_point(alpha=1/5)+
+  ggtitle("NEEM Sulfur Content (ng/g) vs WDC Sulfur Content (ng/g)")+
+  labs(x="NEEM Sulfur Content (ng/g)", y="WDC Sulfur Content (ng/g)")+
+  theme(panel.grid=element_blank())+
+  stat_cor()+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
+  ggsave(file.path(figure_path, "neem_vs_wdc_correlation.pdf"))
+
+############################################
+
 #Scatter plot for Year vs. NEEM
 scatter_YearvNEEM <- ggplot(data = sulfur, aes(x = year, y= neem)) +
                           geom_point(color = "yellow") +
@@ -87,9 +197,38 @@ scatter_NEEMvWDC <- ggplot(data = sulfur, aes(x = neem, y= wdc)) +
                           ggtitle("NEEM vs. WDC Sulfur Levels ") 
 ```
 
-Second step is to create boxplots to check for outliers for the variables "neem" and "wdc" sulfur concentrations; From both boxplots we conclude that there are many outliers
+Next, we can create boxplots to check for outliers for the variables `neem` and `wdc` sulfur concentrations. From both boxplots, we conclude that there are many outliers, and that the data from both data sets is heavily right skewed and not normally distributed. If we look instead at the residuals from each of the models, we can see that the residuals are likewise heavily right skewed and not normally distributed. Again in this case, this would normally disqualify us from carrying out linear regression.
 ```{r}
+sulfur_long<-pivot_longer(sulfur, cols=c("neem", "wdc"), names_to="core_loc")
+sulfur_long$core_loc<-as.factor(sulfur_long$core_loc)
+write.table(sulfur_long, file.path(summary_text_path, "sulfur_dataset_pivot_long.txt"))
 
+#Boxplots for distribution of raw data
+ggplot(sulfur_long, aes(x=year, y=value))+
+  geom_boxplot(col="black", fill="yellow")+
+  ggtitle("Boxplots of Sulfur Content in Ice Core Samples")+
+  labs(y="Sulfur (ng/g)", x="")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())+
+  facet_wrap(~core_loc)+
+  ggsave(file.path(figure_path, "sulfur_distribution_boxplot.pdf"))
+
+#Boxplots for distribution of residuals
+neem_res<-as.data.frame(residuals(NEEM_linear_model))
+wdc_res<-as.data.frame(residuals(WDC_linear_model))
+neem_vs_wdc_res<-as.data.frame(residuals(NEEMvsWDC_linear_model))
+sulfur_residuals<-cbind(neem_res, wdc_res, neem_vs_wdc_res)
+sulfur_residuals_long<-pivot_longer(sulfur_residuals, cols=c("residuals(NEEM_linear_model)", "residuals(WDC_linear_model)", "residuals(NEEMvsWDC_linear_model)"), names_to="residual")
+
+ggplot(sulfur_residuals_long, aes(y=value))+
+  geom_boxplot(col="black", fill="orange")+
+  ggtitle("Boxplots of Residuals for Sulfur Content Models")+
+  labs(y="Residual Value", x="")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())+
+  facet_wrap(~residual)+
+  ggsave(file.path(figure_path, "sulfur_resiudals_distribution_boxplot.pdf"))
+
+###################################
+  
 #Boxplot for sulfur levels from NEEM created using base R
 sulfur$neem<-as.numeric(sulfur$neem)
 boxplot(sulfur$neem, main = "Sulfur detected in ng/g from NEEM",
@@ -113,121 +252,148 @@ ggplot(sulfur, aes(y=wdc))+
   ggtitle("Boxplot of WDC Sulfur Concentrations")+
   labs(y="WDC Sulfur Concentration (ng/g)")+
   theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
-
 ```
 
-Next step is create a density plot to see if sulfur concentration follows a normal distribution at both locations (NEEM and WDC). From the density plots, we see that sulfur concentrations from NEEM and WDC follow a right skewed distribution and is non-normal
-
-We will need to download the following package to create density plots:
-library(e1071)
-
-```{r}
-#density plot for NEEM
-dp_NEEM<- ggplot(sulfur, aes(x=neem))+
-              geom_density(color="yellow", fill="yellow")+
-              xlab("NEEM Sulfur Concentration (ng/g)") +
-              ggtitle("Density of Sulfur Concentrations from NEEM")
-
-#density plot for WDC
-dp_WDC<- ggplot(sulfur, aes(x=wdc))+
-              geom_density(color="orange", fill="orange")+
-              xlab("WDC Sulfur Concentrations (ng/g)") +
-              ggtitle("Density of Sulfur Concentrations from WDC")
-  
-```
-
-After creating and checking the previous 3 plots, we have to test for correlation between year vs. sulfur concentrations in both locations and NEEM vs. WDC .Even though the disibutions of sulfur levels appears non-normal for NEEM and WDC, we will continue to test for correlation using the Pearson's "r" for the sake of the project. Our null hypothesis is that there is no correlation between year vs sulfur levels for NEEM and WDC, and NEEM vs WDC. The alternative hypothesis is there is a correlation between year vs. sulfur levels for NEEM and WDC, and NEEM vs. WDC.
-
-All 3 tests revealed p-levels below 0.05. We reject the null hypothesis and conclude that there is a correlation between year and sulfur levels for NEEM and WDC
-
-```{r}
-#calculating the Pearson's "r" for sulfur levels from NEEM
-cor(sulfur$year, sulfur$neem, method = "pearson", use = "complete.obs")
-#testing if the correlation is statistically significant from 0
-cor.test(sulfur$year, sulfur$wdc, method="pearson")
-
-#calculating the Pearson's "r" for sulfur levels from WDC
-cor(sulfur$year, sulfur$wdc, method = "pearson", use = "complete.obs")
-#testing if the correlation is statistically significant from 0
-cor.test(sulfur$year, sulfur$wdc, method="pearson")
-
-#calculating the Pearson's "r" for NEEM vs. WDC
-cor(sulfur$neem, sulfur$wdc, method = "pearson", use = "complete.obs")
-# testing if the correlation is statistically significant from 0
-cor.test(sulfur$neem, sulfur$wdc, method="pearson")
-
-```
-
-Building a Linear Model - Building a linear model allows us to establish a relationship between year and sulfur levels at NEEM and WDC locations in the form ofsulfur levels as a function for year. Linear models for sulfur levels at both locations are shown below:
-
-NEEM sulfur levels (ng/g) = 19.886023 - 0.005519 * year
-WDC sulfur levels (ng/g) = 21.02073 - 0.01072 * year
-WDC sulfur levels (ng/g) = 13.35411 + 0.06182 * neem (ng/g)
-
-```{r}
-#linear model for Sulfur levels at NEEM
-NEEM_linear_model <- lm(neem ~ year, data = sulfur)
-NEEM_linear_model
-
-#linear model for Sulfur levels at WDC
-WDC_linear_model <- lm(wdc ~ year, data = sulfur) 
-WDC_linear_model
-
-#linear model for NEEM vs. WDC
-NEEMvsWDC_linear_model <-lm(wdc~neem, data = sulfur)
-NEEMvsWDC_linear_model
-```
-
-Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with year and sulfur levels at NEEM/WDC, and NEEM vs WDC is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between sulfur levels at NEEM/WDC and year, and NEEM vs. WDC.Our conclusions are noted below:
-
-p-value for the linear model for sulfur levels at NEEM was above the 0.05 threshold, we fail to reject the null hypothesis that the coefficients associated with sulfur levels at NEEM and year is equal to zero
-
-p-value for the linear model for sulfur levels at WDC was below the 0.05 threshold, we reject the null hypothesis and conclude that there is a relationship between sulfur levels at WDC and year.
-
-p-value for the linear model for NEEM vs. WDC was below the 0.05 threshold, we reject the null hypothesis and conclude that there is a relation between sulfur levels at NEEM and WDC
-
-```{r}
-#model summary for sulfur levels at NEEM
-summary(NEEM_linear_model) 
-
-#model summary for sulfur levels at WDC
-summary(WDC_linear_model)  
-
-#model summary for NEEM vs. WDC
-summary(NEEMvsWDC_linear_model)
-```
-
-Saving the means of sulfur levels at NEEM and WDC as a text file
-```{r}
-write.table(mean(sulfur$neem, na.rm = TRUE), "neem_mean.txt", sep = "\t")
-write.table(mean(sulfur$wdc, na.rm = TRUE), "wdc_mean.txt", sep = "\t")
-```
+Overall, even though we demonstrated that the Year vs WDC and NEEM vs WDC models were statistically significant, we have shown through testing the assumptions that linear regression is not an appropriate approach to take with this data set due to extreme non-normality and lack of a suggestive visible linear trend. Therefore, if we were to look at these variables in a more detailed approach, an approach other than linear regression should be taken to test for relationship between these variables.
 
 __Tree Ring Dataset__
 
-Here is just a simple line graph plotting tree ring Z-scores and European Temperature Index historical data.
+Like the sulfur dataset, the tree ring data set contains three variables. Two response variables are the European temperature index and tree ring Z scores. The European temperature index is a relative temperature index in degrees Celsius. The more ash that is spewed into the air from volcanic eruptions, the more sunlight should be reflected in the atmosphere, and the cooler the average temperature for a given year should be. Likewise, temperature and seasonal extremes should cause more variability in vegetative growth such as tree rings, and this variability should be reflected by larger Z scores. The independent variable is the year from which these measurements were taken, dating back 2,000 years.
 
+___Summary Statistics and Means___
+
+First, we present summary statistics of this data. As done with the sulfur data set, this is done by constructing a summary table based on the `qwraps2` package. Then, we save the means of the data set in a separate text file using the code below. Again, there are only two numeric values in this data file.
+```{r}
+tree_ring_summary <-
+  list("n_tree" =
+         list("min_n_tree"       = ~ min(tree_rings$n_tree, na.rm=T),
+              "max_n_tree"       = ~ max(tree_rings$n_tree, na.rm=T),
+              "median_n_tree"    = ~ median(tree_rings$n_tree, na.rm=T),
+              "mean_n_tree"      = ~ mean(tree_rings$n_tree, na.rm=T),
+              "variance_n_tree"  = ~ var(tree_rings$n_tree, na.rm=T),
+              "stdev_n_tree"     = ~ sd(tree_rings$n_tree, na.rm=T)),
+       "europe_temp_index" =
+         list("min_europe_temp_index"       = ~ min(tree_rings$europe_temp_index, na.rm=T),
+              "max_europe_temp_index"       = ~ max(tree_rings$europe_temp_index, na.rm=T),
+              "median_europe_temp_index"    = ~ median(tree_rings$europe_temp_index, na.rm=T),
+              "mean_europe_temp_index"      = ~ mean(tree_rings$europe_temp_index, na.rm=T),
+              "variance_europe_temp_index"  = ~ var(tree_rings$europe_temp_index, na.rm=T),
+              "stdev_europe_temp_index"     = ~ sd(tree_rings$europe_temp_index, na.rm=T))
+  )
+tree_ring_summary_table<-as.data.frame(summary_table(tree_rings, summaries=tree_ring_summary))
+tree_ring_summary_table
+
+tree_ring_means<-data.frame(mean(tree_rings$n_tree, na.rm=T), mean(tree_rings$europe_temp_index, na.rm=T))
+names(tree_ring_means)<-c("n_tree_mean", "europe_temp_index_mean")
+row.names(tree_ring_means)<-c("overall_means")
+write.table(tree_ring_means, file.path(summary_text_path, "tree_ring_dataset_overall_means.txt"))
+```
+Plotted below are two line graphs showing the measurements of tree ring Z-scores and the European temperature index over time. As shown in these two graphs, the data is very noisy, with large swings from year to year. It is much more noisy than the ice core data. This likely is due to the imprecision of these measurements; since these date back before records were being taken and the data isn't preserved in time like it is for the sulfur in the ice cores, there is a lot more room for error from these estimations.
 ```{r}
 ggplot(tree_rings, aes(x=year, y=n_tree))+
   geom_line()+
   ggtitle("Tree Ring Z-Scores per Year")+
   labs(x="Year (AD)", y="Z-Score")+
-  theme(panel.grid=element_blank())
+  theme(panel.grid=element_blank())+
+  ggsave(file.path(figure_path, "tree_ring_scores_across_years.pdf"))
 
 ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
   geom_line()+
   ggtitle("European Temperature Index per Year")+
   labs(x="Year (AD)", y="European Temperature Index")+
-  theme(panel.grid=element_blank())
+  theme(panel.grid=element_blank())+
+  ggsave(file.path(figure_path, "temp_index_across_years.pdf"))
 
 ```
 
-Conduct a statistical analysis such as Analysis of Variance or Linear Regression:
+___Linear Regression Analysis of Sulfur Content vs. Year and NEEM vs WDC Sulfur Content___
 
-First step is to create scatter plots to visualize a possible linear relationship between the independent and dependent variable: "year" vs. "n_tree"/"europe_temp_index", and "n_tree" vs "europe_temp_index".
+Here, we conduct linear regression to evaluate whether there is a significant linear relationship between year and tree ring Z-score, year and temperature index, and tree ring Z-score and temperature index.
 
-From the scatter plots it does not appear that there is a linear relationship between year vs. "n_tree"/"europe_temp_index". However, it seems that "n_tree" vs "europe_temp_index" follows a strong, positive linear relationship
+First we will construct the representative models, then we will evaluate the assumptions to see if building that model is appropriate for this data set. Null and alternative hypotheses for each of the models are provided, followed by linear models themselves are shown below. Slope and intercept values are provided upon calling the model.
+
 ```{r}
+#Linear model for year vs "n_tree"
+#Ho: Slope = 0 (no linear relationship)
+#HA: Slope not equal to 0 (linear relationship)
+nTree_linear_model <- lm(n_tree ~ year, data = tree_rings)
+nTree_linear_model
+
+#Linear model for year vs. "europe_temp_index"
+#Ho: Slope = 0 (no linear relationship)
+#HA: Slope not equal to 0 (linear relationship)
+ETI_linear_model <- lm(europe_temp_index ~ year, data = tree_rings) 
+ETI_linear_model
+
+#Linear model for "n_tree" vs. "europe_temp_index
+#Ho: Slope = 0 (no linear relationship)
+#HA: Slope not equal to 0 (linear relationship)
+nTreevsETI_linear_model <-lm(europe_temp_index~n_tree, data = tree_rings)
+nTreevsETI_linear_model
+```
+
+After forming these three linear models, we can to test for correlation between year vs. sulfur concentrations in both locations and correlation between NEEM and WDC sulfur content. We will  test for correlation using the Pearson's "r". Based off of these values, we can conclude that there is a weak negative relationship between year and tree ring Z-score and between year and European temperature index, and a strong positive linear correlation between tree ring Z-score and European temperature index.
+```{r}
+#Year vs n_tree
+cor(tree_rings$year, tree_rings$n_tree, method = "pearson", use = "complete.obs")
+
+#Year vs europe_temp_index
+cor(tree_rings$year, tree_rings$europe_temp_index, method = "pearson", use = "complete.obs")
+
+#n_tree vs europe_temp_index
+cor(tree_rings$n_tree, tree_rings$europe_temp_index, method = "pearson", use = "complete.obs")
+```
+
+By running the `summary()` below function, we can determine the significance of our models. Our conclusions are noted as follows:
+
+1) Year vs n_tree: p = 2.6E-11. At alpha = 0.05, we reject the null hypothesis and conclude that there is a significant linear relationship between year and tree ring Z-score.
+
+2) Year vs europe_temp_index: p = 2.2E-16. At alpha = 0.05, we reject the null hypothesis and conclude that there is a significant linear relationship between year and European temperature index.
+
+3) n_tree vs europe_temp_index: p = 2.2E-16. At alpha = 0.05, we reject the null hypothesis and conclude that there is a significant linear relationship between tree ring Z-score and European temperature index.
+```{r}
+#model summary for "n_tree" and year
+summary(nTree_linear_model) 
+
+#model summary for "europe_temp_index" and year
+summary(ETI_linear_model)  
+
+#model summary for "n_tree" vs. "europe_temp_index"
+summary(nTreevsETI_linear_model)
+```
+
+Now that we have constructed models and determined that a linear relationship was observed for two of the three models, we need to test the assumptions to determine whether linear regression was appropriate for this data. We can first create scatter plots to visualize a possible linear relationship between the independent and dependent variables. From the scatterplot it is possible that there is a linear relationship between year and tree ring Z-score or year and European temperature index. However, it appears that there is a strong, positive linear relationship between tree ring Z-score and European temperature index, as was suggested by the linear model. Because a possible linear trend exists for all three sets of data, we will continue checking the model assumptions.
+
+```{r}
+ggplot(tree_rings, aes(x=year, y=n_tree))+
+  geom_point(alpha=1/5)+
+  ggtitle("Year vs Tree Ring Z-Score")+
+  labs(x="Year", y="Tree Ring Z-Score")+
+  theme(panel.grid=element_blank())+
+  stat_cor()+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
+  ggsave(file.path(figure_path, "year_vs_tree_ring_correlation.pdf"))
+
+ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
+  geom_point(alpha=1/5)+
+  ggtitle("Year vs European Temperature Index")+
+  labs(x="Year", y="European Temperature Index")+
+  theme(panel.grid=element_blank())+
+  stat_cor()+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
+  ggsave(file.path(figure_path, "year_vs_temp_index_correlation.pdf"))
+
+ggplot(tree_rings, aes(x=n_tree, y=europe_temp_index))+
+  geom_point(alpha=1/5)+
+  ggtitle("Tree Ring Z-Score vs European Temperature Index")+
+  labs(x="Tree Ring Z-Score", y="European Temperature Index")+
+  theme(panel.grid=element_blank())+
+  stat_cor()+
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
+  ggsave(file.path(figure_path, "tree_ring_vs_temp_index_correlation.pdf"))
+
+###########################################
+
 #Scatter plot for Year vs. "n_Tree"
 scatter_YearvnTree <- ggplot(data = tree_rings, aes(x = year, y= n_tree)) +
                           geom_point(color = "green") +
@@ -248,8 +414,38 @@ scatter_nTreevETI <- ggplot(data = tree_rings, aes(x = n_tree, y= europe_temp_in
                           ggtitle("Tree ring z-scores vs. ETI in Celsius ") 
 ```
 
-Second step is to create boxplots to check for outliers for the variables "n_Tree" and "europe_temp_index"; From both boxplots we conclude that there are a moderate amount of outliers
+Next, we can create boxplots to check for outliers for the variables `n_tree` and `europe_temp_index` values. From both boxplots, we conclude that there are several outliers, but the data from both data appears normally distributed without skew. If we look instead at the residuals from each of the models, they also appear to follow a normal distribution for all three of the models. From this data, we can conclude that this assumption has been met.
 ```{r}
+tree_rings_long<-pivot_longer(tree_rings, cols=c("n_tree", "europe_temp_index"), names_to="measurement_type")
+tree_rings_long$measurement_type<-as.factor(tree_rings_long$measurement_type)
+write.table(tree_rings_long, file.path(summary_text_path, "tree_rings_dataset_pivot_long.txt"))
+
+#Boxplots for distribution of raw data
+ggplot(tree_rings_long, aes(x=year, y=value))+
+  geom_boxplot(col="black", fill="blue")+
+  ggtitle("Boxplots of Tree Ring Z-Scores and European Temperature Indices")+
+  labs(y="Value", x="")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())+
+  facet_wrap(~measurement_type)+
+  ggsave(file.path(figure_path, "tree_ring_temp_index_distribution_boxplot.pdf"))
+
+#Boxplots for distribution of residuals
+n_tree_res<-as.data.frame(residuals(nTree_linear_model))
+ETI_res<-as.data.frame(residuals(ETI_linear_model))
+n_tree_ETI_res<-as.data.frame(residuals(nTreevsETI_linear_model))
+tree_ring_residuals<-cbind(n_tree_res, ETI_res, n_tree_ETI_res)
+tree_ring_residuals_long<-pivot_longer(tree_ring_residuals, cols=c("residuals(nTree_linear_model)", "residuals(ETI_linear_model)", "residuals(nTreevsETI_linear_model)"), names_to="residual")
+
+ggplot(tree_ring_residuals_long, aes(y=value))+
+  geom_boxplot(col="black", fill="green")+
+  ggtitle("Boxplots of Residuals for Tree Ring Dataset Models")+
+  labs(y="Residual Value", x="")+
+  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())+
+  facet_wrap(~residual)+
+  ggsave(file.path(figure_path, "tree_ring_temp_index_residuals_distribution_boxplot.pdf"))
+
+#############################
+
 #Boxplot for "n_tree"
 bp_nTree<- ggplot(tree_rings, aes(y=n_tree))+
   geom_boxplot(fill = "green")+
@@ -265,88 +461,7 @@ bp_ETI <- ggplot(tree_rings, aes(y=europe_temp_index))+
   theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
 ```
 
-Next step is create a density plot to see if "n_tree" and "europe_temp_index" follows a normal distribution. From the density plots, we see that "n_tree" and "europe_temp_index" follows a normal distribution.
-
-```{r}
-#density plot for "n_tree"
-dp_ntree<- ggplot(tree_rings, aes(x=n_tree))+
-              geom_density(color="green", fill="green")+
-              xlab("Tree ring z-scores relative to year = 1000-1099") +
-              ggtitle("Density of Tree ring z-scores")
-
-#density plot for "europe_temp_index"
-dp_ntree<- ggplot(tree_rings, aes(x=europe_temp_index))+
-              geom_density(color="red", fill="red")+
-              xlab("Pages 2K Temperature for Europe in Celsius") +
-              ggtitle("Density of Pages 2K Temperature for Europe in Celsius")
-```
-
-After creating and checking the previous 3 plots, we have to test for correlation between year vs. "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index".. Our null hypothesis is that there is no correlation between year vs. "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index". The alternative hypothesis is there is a correlation between year vs. "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index".
-
-All 3 tests revealed p-levels below 0.05. We reject the null hypothesis and conclude that there is a correlation between year and "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index"
-
-```{r}
-#calculating the Pearson's "r" for year vs. "n_tree"
-cor(tree_rings$year, tree_rings$n_tree, method = "pearson", use = "complete.obs")
-#testing if the correlation is statistically significant from 0
-cor.test(tree_rings$year, tree_rings$n_tree, method="pearson")
-
-#calculating the Pearson's "r" for year vs. "europe_temp_index"
-cor(tree_rings$year, tree_rings$europe_temp_index, method = "pearson", use = "complete.obs")
-#testing if the correlation is statistically significant from 0
-cor.test(tree_rings$year, tree_rings$europe_temp_index, method="pearson")
-
-#calculating the Pearson's "r" for "n_tree" vs. "europe_temp_index"
-cor(tree_rings$n_tree, tree_rings$europe_temp_index, method = "pearson", use = "complete.obs")
-# testing if the correlation is statistically significant from 0
-cor.test(tree_rings$n_tree, tree_rings$europe_temp_index, method="pearson")
-```
-
-Building a Linear Model - Building a linear model allows us to establish a relationship between year and "n_tree"/"europe_temp_index", and "n_tree" vs. "europe_temp_index in the form of "n_tree"/"europe_temp_index" as a function of year and "europe_temp_index" as a function of "n_tree", respectively.
-
-Linear models are shown below
-
-Tree ring z-score = -0.3668420 - -0.0001842 * year
-Pages 2K Temperature for Europe (C) = -0.0067512 - -0.0001582 * year
-Pages 2K Temperature for Europe (C) = 0.1073 + 0.4941 * Tree ring z-score
-
-```{r}
-#linear model for year vs "n_tree"
-nTree_linear_model <- lm(n_tree ~ year, data = tree_rings)
-nTree_linear_model
-
-#linear model for year vs. "europe_temp_index"
-ETI_linear_model <- lm(europe_temp_index ~ year, data = tree_rings) 
-ETI_linear_model
-
-#linear model for "n_tree" vs. "europe_temp_index
-nTreevsETI_linear_model <-lm(europe_temp_index~n_tree, data = tree_rings)
-nTreevsETI_linear_model
-
-
-```
-
-Checking if our linear model is statistically significant - The null hypothesis is that the coefficients associated with year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index" is equal to zero. The alternative hypothesis is that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index".
-
-
-```{r}
-#model summary for "n_tree" and year
-summary(nTree_linear_model) 
-
-#model summary for "europe_temp_index" and year
-summary(ETI_linear_model)  
-
-#model summary for "n_tree" vs. "europe_temp_index"
-summary(nTreevsETI_linear_model)
-```
-
-The appropriate p-values for all three linear models was below the 0.05 threshold. We reject the null hypothesis and conclude that the coefficients are not equal to zero and there is a relationship between year and "sulfur levels"n_tree"/"europe_temp_index, and "n_tree" vs. "europe_temp_index".
-
-Savings the means of "n_tree" and "europe_temp_index" as a text file:
-```{r}
-write.table(mean(tree_rings$n_tree, na.rm = TRUE), "nTree_mean.txt", sep = "\t")
-write.table(mean(tree_rings$europe_temp_index, na.rm = TRUE), "ETI_mean.txt", sep = "\t")
-```
+Overall, we have demonstrated that the assumptions for conducting linear regression have been met, so this form of analysis is appropriate. Based off of these models, we can conclude that there is a weak negative linear relationship between year and tree ring Z-score and between year and European temperature index, and a strong positive linear relationship between tree ring Z-score and European temperature index. As noisy as the data was from the initial line plot, these conclusions were rather interesting, as we wouldn't have thought that they would have lined up so well. However, it does make sense that vegetative growth of trees would be influenced by temperature, so this correlation is reasonable.
 
 __Volcano Dataset__
 
@@ -807,7 +922,7 @@ ggplot(eruptions, aes(x=evidence_method_dating))+
   labs(x="Evidence Dating Methods", y="Number of Eruptions")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))
 
-eruptions2 <- filter(eruptions2, evidence_method_dating != "Historical Observations")
+eruptions2 <- filter(eruptions, evidence_method_dating != "Historical Observations")
 ggplot(eruptions2, aes(x=evidence_method_dating))+
   geom_bar()+
   ggtitle("Prevalence of Different Eruption Dating Methods")+
