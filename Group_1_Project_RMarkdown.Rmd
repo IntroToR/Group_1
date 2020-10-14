@@ -926,10 +926,26 @@ globejs(lat=for_globe$latitude, long=for_globe$longitude, val=(0.025*for_globe$e
 
 __Eruptions Dataset__
 
+The `eruptions` data set contains information related to volcanic eruptions for individually named volcanos. Among this information is the VEI, or volcanic explosivity index, which is a measure of the intensity of past volcanic eruptions. Additionally, start and end dates for eruptions are provided with individual columns for day, month, and year. Location is provided with latitude and longitude, while observations such as type of methodology used for dating past eruptions is also included. For the purpose of this project, we are focusing primarily on the main numeric data in this file, the VEI.
+
+___Eruption Intensity by VEI___
+
+Plotted below is a simple histogram showing the distribution of VEI across recorded volcanic eruptions. As seen in the histogram, most past eruptions have a VEI of 2, which is toward the low end of the scale. There is some right skew to the data as well.
 ```{r}
 #simple histogram showing the number of eruptions of differing intesities
 hist(eruptions$vei, main = "Volcano eruption index frequency", xlab = "Volcano eruption index", ylab = "Frequency")
+
+################################## Leo, take a look at this histogram and see if it looks better than the base package one that you included initially. We can choose which one we want to keep for the final draft.
+
+mean(eruptions$vei, na.rm=T)
+
+ggplot(eruptions, aes(x=vei))+
+  geom_histogram(binwidth=1, col="black", fill="cyan")+
+  ggtitle("Histogram of Volcanic Eruption Index")+
+  labs(x="VEI", y="Number of Observaitons")+
+  theme(panel.grid = element_blank())
 ```
+___Need to include a more descriptive description here___
 
 ```{r}
 #interesting graphs showing the distribution of vei over longitude and latitude
@@ -945,26 +961,59 @@ ggplot(eruptions, aes(x=longitude, y=vei))+
   labs(x="Longitude", y="vei")
 ```
 
+___Eruption Length Categorized by VEI___
+
+The only numeric data that this file contains is `vei`, `latitude`, `longitude`, and the various columns for start and end day, month, and year. Out of these existing values, it only makes sense to calculate the mean of the VEI, which we showed in addition to the previous histogram. However, we can create an additional column from this data for the length of each eruption in days. We first must put the day, month, and year in the same column for the start and end dates, then convert these values to dates using the `as.Date()` function from base R. Then, we can use `mutate()` to take the end date minus the start date to get length of eruption in days. Following this step, we can create jitter plots that show the different day at specified levels of VEI. Because there are several outliers that compress the data, we created a second jitter plot that shows only data within one standard deviation of the mean lenght of eruption. We can see that eruption lengths vary widely within individual VEI categories.
 ```{r}
-#average number of years during which the eruption takes place
-data <- eruptions[c(7,11)] %>%
-  mutate(c = end_year - start_year)%>%
-  drop_na()
-mean(data$c)
+eruptions_updated<-eruptions%>%
+  transform(start_date=interaction(start_year, start_month, start_day, sep="-"))%>%
+  transform(end_date=interaction(end_year, end_month, end_day, sep="-"))
+eruptions_updated$start_date<-as.Date(eruptions_updated$start_date)
+eruptions_updated$end_date<-as.Date(eruptions_updated$end_date)
+eruptions_updated$vei<-as.factor(eruptions_updated$vei)
+eruptions_updated<-eruptions_updated%>%
+  mutate(eruption_length_in_days=end_date - start_date)
+eruptions_updated$eruption_length_in_days<-as.numeric(eruptions_updated$eruption_length_in_days)
+
+#All Data Points
+ggplot(eruptions_updated, aes(x=vei, y=eruption_length_in_days))+
+  geom_jitter(aes(color=vei), alpha=1/5, show.legend=F)+
+  ggtitle("Eruption Length in Days by VEI")+
+  labs(x="VEI", y="Eruption Lenght (Days)")+
+  theme(panel.grid = element_blank())
+
+mean(eruptions_updated$eruption_length_in_days, na.rm=T)+sd(eruptions_updated$eruption_length_in_days, na.rm=T)
+
+#Data Points within One SD of Mean
+ggplot(eruptions_updated, aes(x=vei, y=eruption_length_in_days))+
+  geom_jitter(aes(color=vei), alpha=1/2, show.legend = F)+
+  ylim(0,2465)+
+  ggtitle("Eruption Length in Days by VEI - Within One Standard Deviation")+
+  labs(x="VEI", y="Eruption Lenght (Days)")+
+  theme(panel.grid = element_blank())
 ```
 
+___Methods of Dating Past Volcanic Eruptions___
+
+Here we create several bar plots displaying the different methods used for dating various eruptions of volcanos. The first plot is of the raw data. A high number of individuals categorized as "Historical Observations" compresses the rest of the bars in the plot, so we remove all individuals with "Historical Observations" to create the new data set `eruptions2`. Then, we create a new bar plot that includes all methods used besides "Historical Observations". As can be seen, visualization of the different amounts is made much easier by removing this factor.
 ```{r}
-#bar plot showing the different methods used for evidence dating + a bar plot without the "Historical Observations" variable for easier viewing if the other methods
 ggplot(eruptions, aes(x=evidence_method_dating))+
-  geom_bar()+
+  geom_bar(fill="red")+
   ggtitle("Prevalence of Different Eruption Dating Methods")+
   labs(x="Evidence Dating Methods", y="Number of Eruptions")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))
 
 eruptions2 <- filter(eruptions, evidence_method_dating != "Historical Observations")
+
+evidence_count2<-eruptions2 %>% 
+  group_by(evidence_method_dating) %>%
+  summarise(no_rows5 = length(evidence_method_dating))
+
 ggplot(eruptions2, aes(x=evidence_method_dating))+
-  geom_bar()+
+  geom_bar(fill="purple")+
   ggtitle("Prevalence of Different Eruption Dating Methods")+
   labs(x="Evidence Dating Methods", y="Number of Eruptions")+
-  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))+
+  geom_text(data=evidence_count2, aes(x=evidence_method_dating, y=no_rows5, label=no_rows5), nudge_y=60)
 ```
+
