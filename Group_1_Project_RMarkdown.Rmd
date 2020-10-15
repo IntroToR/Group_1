@@ -39,6 +39,7 @@ library(ggpubr)
 library(threejs)
 library(qwraps2)
 library(agricolae)
+library(ggplot2)
 ```
 
 __Sulfur Concentration Dataset__
@@ -932,11 +933,6 @@ ___Eruption Intensity by VEI___
 
 Plotted below is a simple histogram showing the distribution of VEI across recorded volcanic eruptions. As seen in the histogram, most past eruptions have a VEI of 2, which is toward the low end of the scale. There is some right skew to the data as well.
 ```{r}
-#simple histogram showing the number of eruptions of differing intesities
-hist(eruptions$vei, main = "Volcano eruption index frequency", xlab = "Volcano eruption index", ylab = "Frequency")
-
-################################## Leo, take a look at this histogram and see if it looks better than the base package one that you included initially. We can choose which one we want to keep for the final draft.
-
 mean(eruptions$vei, na.rm=T)
 
 ggplot(eruptions, aes(x=vei))+
@@ -945,20 +941,20 @@ ggplot(eruptions, aes(x=vei))+
   labs(x="VEI", y="Number of Observaitons")+
   theme(panel.grid = element_blank())
 ```
-___Need to include a more descriptive description here___
+___VEI Visualized over Longitude and Latitude___
 
+These two count graphs provide a visualization of the number of volcanoes, and their respective VEI, plotted over Longitude and Latitude. this is achieved by simply plotting the VEI against the data points for Latitude and Longitude respectively. The size of each point represents the number of volcanoes of a certain VEI at a certain Latitude or Longitude. Using these plots we can see the distribution of intense volcanoes between the Eastern and Western hemispheres, as well as the Northern and Southern hemispheres.
 ```{r}
-#interesting graphs showing the distribution of vei over longitude and latitude
 #y axis is intensity and the x axis is longitude, size of dot = the number of observations at that given latitude
 ggplot(eruptions, aes(x=latitude, y=vei))+
-  geom_count(na.rm = T)+
-  ggtitle("Volcano eruption index distributed over latitude")+
-  labs(x="Latitude", y="vei")
+  geom_count(na.rm = T, col = "orange")+
+  ggtitle("Volcano Explosivity Index Distributed Over Latitude")+
+  labs(x="Latitude", y="VEI")
 
 ggplot(eruptions, aes(x=longitude, y=vei))+
-  geom_count(na.rm = T)+
-  ggtitle("Volcano eruption index distributed over longitude")+
-  labs(x="Longitude", y="vei")
+  geom_count(na.rm = T, col = "blue")+
+  ggtitle("Volcano Explosivity Index Distributed Over Longitude")+
+  labs(x="Longitude", y="VEI")
 ```
 
 ___Eruption Length Categorized by VEI___
