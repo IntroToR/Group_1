@@ -654,7 +654,7 @@ hsd1=HSD.test(elevation_anova, "primary_volcano_type", group=T)
 ggplot(volcano, aes(x=reorder(primary_volcano_type, elevation, na.rm=T), y=elevation))+
   geom_boxplot(fill="cyan")+
   ggtitle("Boxplot of Volcano Elevation by Volcano Type")+
-  labs(x="Elevation (Meters above Sea Level)", y="Volcano Type")+
+  labs(y="Elevation (Meters above Sea Level)", x="Volcano Type")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.95))+
   stat_summary(fun=mean, geom="point", pch="+", size=2.5, color="red", fill="red")+
   geom_text(elevation_means, mapping=aes(x=reorder(primary_volcano_type, mean_height), y=mean_height,label=hsd1$groups$groups, vjust=-2.25, hjust=-0.25))+
