@@ -1,0 +1,2 @@
+"NEEM_mean" "WDC_mean"
+"overall_mean_sulfur_content" 16.4617940876656 14.1221576376554

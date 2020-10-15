@@ -1,8 +1,2 @@
-"overall_means"
-"elevation" 1867.02713987474
-"last_eruption_year" 730.488584474886
-"years_ago" 1289.51141552511
-"population_within_5_km" 47860.4634655532
-"population_within_10_km" 61217.748434238
-"population_within_30_km" 304044.353862213
-"population_within_100_km" 2730173.99895616
+"elevation" "last_eruption_year" "years_ago" "population_within_5_km" "population_within_10_km" "population_within_30_km" "population_within_100_km"
+"overall_means" 1867.02713987474 730.488584474886 1289.51141552511 47860.4634655532 61217.748434238 304044.353862213 2730173.99895616

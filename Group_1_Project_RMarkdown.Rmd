@@ -2,14 +2,18 @@
 title: "Group_1_Project"
 author: "Matthew Runyon, Winston Wong, & Leo D'Agostino"
 date: "10/16/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The data set that we have chosen to work with is the "Volcano Eruptions" data set, coming from Week 20 of the 2020 TidyTuesday project. This data is provided by the Smithsonian Institute. The data, which is split into five files (`volcano`, `eruptions`, `events`, `tree_rings`, and `sulfur`) can be read in using the first half of the following code. Following that, we created the file paths to save various data sets, figures, and summary tables. Finally, we saved each of these files within the actual `Data_Sets` file on GitHub using the second half of code. As far as responsibilities for each of these files, Winston was responsible for data analysis on the `tree_rings` and `sulfur` data sets, Leo was responsible for investigating the `eruptions` data set, and Matthew was responsible for analyzing the `volcano` data set. Everyone provided assistance across data sets with code formatting to bolster the appearance after preliminary analyses had been completed independently. We chose not to delve into the `events` file because it was mainly date information without many other important variables to work with.
+The data set that we have chosen to work with is the "Volcano Eruptions" data set, coming from Week 20 of the 2020 TidyTuesday project. This data is provided by the Smithsonian Institute. The data, which is split into five files (`volcano`, `eruptions`, `events`, `tree_rings`, and `sulfur`). As far as responsibilities for each of these files, Winston was responsible for data analysis on the `tree_rings` and `sulfur` data sets, Leo was responsible for investigating the `eruptions` data set, and Matthew was responsible for analyzing the `volcano` data set. Everyone provided assistance across data sets with code formatting to bolster the appearance after preliminary analyses had been completed independently. We chose not to delve into the `events` file because it was mainly date information without many other important variables to work with. 
+
+__NOTE__: This HTML document contains all the code neccesary for saving the tables and figures for the primary document composer (Matthew Runyon) on a local machine, noted by the creation of the file paths in the second half of this chunk of code. However, this code was causing issues in knitting for the other members of the group. This document is simply provided to show how the figures were saved without error. Once the saved figures have been pushed to Github, this code will be removed in the final document to prevent additional errors in knitting. 
 
 ```{r}
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
@@ -39,8 +43,6 @@ library(ggpubr)
 library(threejs)
 library(qwraps2)
 library(agricolae)
-library(ggplot2)
-library(dplyr)
 ```
 
 __Sulfur Concentration Dataset__
@@ -176,34 +178,13 @@ ggplot(sulfur, aes(x=neem, y=wdc))+
   stat_cor()+
   geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
   ggsave(file.path(figure_path, "neem_vs_wdc_correlation.pdf"))
-
-############################################ Winston, see what you think about the scatter plots that I included here; if you like them better, take out the ones below, but if you like the originals better, take out the ones above
-
-#Scatter plot for Year vs. NEEM
-scatter_YearvNEEM <- ggplot(data = sulfur, aes(x = year, y= neem)) +
-                          geom_point(color = "yellow") +
-                          ylab("Sulfur detected in ng/g") +
-                          ggtitle("Sulfur detected in ng/g from NEEM") 
-
-#Scatter plot for Year vs. WDC
-scatter_YearvWDC <- ggplot(data = sulfur, aes(x = year, y= wdc)) +
-                          geom_point(color = "orange") +
-                          ylab("Sulfur detected in ng/g") +
-                          ggtitle("Sulfur detected in ng/g from WDC") 
-
-#Scatter plot for NEEM vs WDC
-scatter_NEEMvWDC <- ggplot(data = sulfur, aes(x = neem, y= wdc)) +
-                          geom_point(color = "blue") +
-                          ylab("WDC sulfur levels in ng/g") +
-                          xlab("NEEM sulfur levels in ng/g")+
-                          ggtitle("NEEM vs. WDC Sulfur Levels ") 
 ```
 
 Next, we can create boxplots to check for outliers for the variables `neem` and `wdc` sulfur concentrations. From both boxplots, we conclude that there are many outliers, and that the data from both data sets is heavily right skewed and not normally distributed. If we look instead at the residuals from each of the models, we can see that the residuals are likewise heavily right skewed and not normally distributed. Again in this case, this would normally disqualify us from carrying out linear regression.
 ```{r}
 sulfur_long<-pivot_longer(sulfur, cols=c("neem", "wdc"), names_to="core_loc")
 sulfur_long$core_loc<-as.factor(sulfur_long$core_loc)
-write.table(sulfur_long, file.path(summary_text_path, "sulfur_dataset_pivot_long.txt"))
+write.table(sulfur_long, file.path(data_sets_path, "sulfur_dataset_pivot_long.txt"))
 
 #Boxplots for distribution of raw data
 ggplot(sulfur_long, aes(x=year, y=value))+
@@ -228,32 +209,6 @@ ggplot(sulfur_residuals_long, aes(y=value))+
   theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())+
   facet_wrap(~residual)+
   ggsave(file.path(figure_path, "sulfur_resiudals_distribution_boxplot.pdf"))
-
-################################### Winston, see what you think about the scatter plots that I included here; if you like them better, take out the ones below, but if you like the originals better, take out the ones above
-  
-#Boxplot for sulfur levels from NEEM created using base R
-sulfur$neem<-as.numeric(sulfur$neem)
-boxplot(sulfur$neem, main = "Sulfur detected in ng/g from NEEM",
-        xlab = "sulfur (ng/g)", horizontal = TRUE)
-
-#Boxplot for sulfur levels from NEEM created using ggplot2
-ggplot(sulfur, aes(y=neem))+
-  geom_boxplot()+
-  ggtitle("Boxplot of NEEM Sulfur Concentrations")+
-  labs(y="NEEM Sulfur Concentration (ng/g)")+
-  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
-
-#Boxplot for sulfur levels from WDC created using base R
-WDCsulfur <- as.numeric(sulfur$wdc)
-boxplot(sulfur$wdc, main = "Sulfur detected in ng/g from WDC",
-        xlab = "sulfur (ng/g)", horizontal = TRUE)
-
-#Boxplot for sulfur levels from WDC created using ggplot2
-ggplot(sulfur, aes(y=wdc))+
-  geom_boxplot()+
-  ggtitle("Boxplot of WDC Sulfur Concentrations")+
-  labs(y="WDC Sulfur Concentration (ng/g)")+
-  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
 ```
 
 Overall, even though we demonstrated that the Year vs WDC and NEEM vs WDC models were statistically significant, we have shown through testing the assumptions that linear regression is not an appropriate approach to take with this data set due to extreme non-normality and lack of a suggestive visible linear trend. Therefore, if we were to look at these variables in a more detailed approach, a data tranformation should be attempted, or an approach other than linear regression should be taken to test for relationship between these variables.
@@ -393,34 +348,13 @@ ggplot(tree_rings, aes(x=n_tree, y=europe_temp_index))+
   stat_cor()+
   geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE)+
   ggsave(file.path(figure_path, "tree_ring_vs_temp_index_correlation.pdf"))
-
-########################################### Winston, see what you think about the scatter plots that I included here; if you like them better, take out the ones below, but if you like the originals better, take out the ones above
-
-#Scatter plot for Year vs. "n_Tree"
-scatter_YearvnTree <- ggplot(data = tree_rings, aes(x = year, y= n_tree)) +
-                          geom_point(color = "green") +
-                          ylab("Tree ring z-scores relative to year = 1000-1099") +
-                          ggtitle("Tree rings z-scores vs. Year") 
-
-#Scatter plot for Year vs. "europe_temp_index"
-scatter_YearvETI <- ggplot(data = tree_rings, aes(x = year, y= europe_temp_index)) +
-                          geom_point(color = "red") +
-                          ylab("Pages 2K Temperature for Europe in Celsius") +
-                          ggtitle("Pages 2K Temperature for Europe in Celsius vs. Year") 
-
-#Scatter plot for "n_tree" vs "europe_temp_index"
-scatter_nTreevETI <- ggplot(data = tree_rings, aes(x = n_tree, y= europe_temp_index)) +
-                          geom_point(color = "blue") +
-                          ylab("Pages 2K Temperature for Europe in Celsius") +
-                          xlab("Tree ring z-scores relative to year = 1000-1099")+
-                          ggtitle("Tree ring z-scores vs. ETI in Celsius ") 
 ```
 
 Next, we can create boxplots to check for outliers for the variables `n_tree` and `europe_temp_index` values. From both boxplots, we conclude that there are several outliers, but the data from both data appears normally distributed without skew. If we look instead at the residuals from each of the models, they also appear to follow a normal distribution for all three of the models. From this data, we can conclude that this assumption has been met.
 ```{r}
 tree_rings_long<-pivot_longer(tree_rings, cols=c("n_tree", "europe_temp_index"), names_to="measurement_type")
 tree_rings_long$measurement_type<-as.factor(tree_rings_long$measurement_type)
-write.table(tree_rings_long, file.path(summary_text_path, "tree_rings_dataset_pivot_long.txt"))
+write.table(tree_rings_long, file.path(data_sets_path, "tree_rings_dataset_pivot_long.txt"))
 
 #Boxplots for distribution of raw data
 ggplot(tree_rings_long, aes(x=year, y=value))+
@@ -445,22 +379,6 @@ ggplot(tree_ring_residuals_long, aes(y=value))+
   theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())+
   facet_wrap(~residual)+
   ggsave(file.path(figure_path, "tree_ring_temp_index_residuals_distribution_boxplot.pdf"))
-
-############################# Winston, see what you think about the scatter plots that I included here; if you like them better, take out the ones below, but if you like the originals better, take out the ones above
-
-#Boxplot for "n_tree"
-bp_nTree<- ggplot(tree_rings, aes(y=n_tree))+
-  geom_boxplot(fill = "green")+
-  ggtitle("Boxplot of Tree ring z-scores relative to year = 1000-1099") +
-  labs(y="Tree ring z-scores ")+
-  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
-
-#Boxplot for "europe_temp_index"
-bp_ETI <- ggplot(tree_rings, aes(y=europe_temp_index))+
-  geom_boxplot(fill = "red")+
-  ggtitle("Pages 2K Temperature for Europe in Celsius") +
-  labs(y="Celsius ")+
-  theme(panel.grid=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
 ```
 
 Overall, we have demonstrated that the assumptions for conducting linear regression have been met, so this form of analysis is appropriate. Based off of these models, we can conclude that there is a weak negative linear relationship between year and tree ring Z-score and between year and European temperature index, and a strong positive linear relationship between tree ring Z-score and European temperature index. As noisy as the data was from the initial line plot, these conclusions were rather interesting, as we wouldn't have thought that they would have lined up so well. However, it does make sense that vegetative growth of trees would be influenced by temperature, so this correlation is reasonable.
@@ -571,6 +489,7 @@ formatted_volcano_stats[1:6, 5]<-volcano_summary_table[25:30, 1]
 formatted_volcano_stats[1:6, 6]<-volcano_summary_table[31:36, 1]
 formatted_volcano_stats[1:6, 7]<-volcano_summary_table[37:42, 1]
 formatted_volcano_stats<-as.data.frame(formatted_volcano_stats)
+formatted_volcano_stats
 
 overall_means<-data.frame(mean(volcano$elevation),
 mean(volcano$last_eruption_year, na.rm=T),
@@ -701,7 +620,7 @@ ggplot(volcano, aes(x=elevation))+
 
 ___Eruption Dates___
 
-This is a histogram showing the number of volcanos that have a known eruption within a certian number of years in the past. Currently, the bin width is set at 1,000 years. However, this doesn't discriminate well for the most recent years. Something needs to be done to split up the more recent and the older data.
+This is a histogram showing the number of volcanos that have a known eruption within a certian number of years in the past. Most volcano eruptions that we are aware of fall most recently, which tracks well with the fact established above that most known volcanic eruptions fall under the "Eruption Observed" category.
 ```{r}
 ggplot(volcano, aes(x=last_eruption_year))+
   geom_histogram(binwidth=1000, color="black", fill="pink")+
@@ -847,7 +766,6 @@ leveneTest(model4)
 five_km_anova<-aov(model4)
 summary(five_km_anova)
 hsd4=HSD.test(five_km_anova, "primary_volcano_type", group=T)
-hsd4
 
 #10km population means
 #Ho: All populations are equal among volcano types
@@ -859,7 +777,6 @@ leveneTest(model5)
 ten_km_anova<-aov(model5)
 summary(ten_km_anova)
 hsd5=HSD.test(ten_km_anova, "primary_volcano_type", group=T)
-hsd5
 
 #30km population means
 #Ho: All populations are equal among volcano types
@@ -871,7 +788,6 @@ leveneTest(model6)
 thirty_km_anova<-aov(model6)
 summary(thirty_km_anova)
 hsd6=HSD.test(thirty_km_anova, "primary_volcano_type", group=T)
-hsd6
 
 #100km population means
 #Ho: All populations are equal among volcano types
@@ -883,7 +799,6 @@ leveneTest(model7)
 hundred_km_anova<-aov(model7)
 summary(hundred_km_anova)
 hsd7=HSD.test(hundred_km_anova, "primary_volcano_type", group=T)
-hsd7
 ```
 
 ___Linear Regression and Correlation of Volcano Elevation with Last Known Eruption Year___
@@ -892,7 +807,6 @@ Here, a reasonable assumption that could be made about volcanos is that ones tha
 ```{r}
 #Ho: Slope = 0 (no linear relationship)
 #HA: Slope not equal to 0 (linear relationship)
-
 ggplot(volcano, aes(x=last_eruption_year, y=elevation))+
   geom_point(alpha=1/5)+
   ggtitle("Last Eruption Year vs Elevation")+
@@ -940,8 +854,10 @@ ggplot(eruptions, aes(x=vei))+
   geom_histogram(binwidth=1, col="black", fill="cyan")+
   ggtitle("Histogram of Volcanic Eruption Index")+
   labs(x="VEI", y="Number of Observaitons")+
-  theme(panel.grid = element_blank())
+  theme(panel.grid = element_blank())+
+  ggsave(file.path(figure_path, "vei_histogram.pdf"))
 ```
+
 ___VEI Visualized over Longitude and Latitude___
 
 These two count graphs provide a visualization of the number of volcanoes, and their respective VEI, plotted over Longitude and Latitude. this is achieved by simply plotting the VEI against the data points for Latitude and Longitude respectively. The size of each point represents the number of volcanoes of a certain VEI at a certain Latitude or Longitude. Using these plots we can see the distribution of intense volcanoes between the Eastern and Western hemispheres, as well as the Northern and Southern hemispheres.
@@ -950,12 +866,14 @@ These two count graphs provide a visualization of the number of volcanoes, and t
 ggplot(eruptions, aes(x=latitude, y=vei))+
   geom_count(na.rm = T, col = "orange")+
   ggtitle("Volcano Explosivity Index Distributed Over Latitude")+
-  labs(x="Latitude", y="VEI")
+  labs(x="Latitude", y="VEI")+
+  ggsave(file.path(figure_path, "vei_by_latitude.pdf"))
 
 ggplot(eruptions, aes(x=longitude, y=vei))+
   geom_count(na.rm = T, col = "blue")+
   ggtitle("Volcano Explosivity Index Distributed Over Longitude")+
-  labs(x="Longitude", y="VEI")
+  labs(x="Longitude", y="VEI")+
+  ggsave(file.path(figure_path, "vei_by_longitude.pdf"))
 ```
 
 ___Eruption Length Categorized by VEI___
@@ -971,13 +889,15 @@ eruptions_updated$vei<-as.factor(eruptions_updated$vei)
 eruptions_updated<-eruptions_updated%>%
   mutate(eruption_length_in_days=end_date - start_date)
 eruptions_updated$eruption_length_in_days<-as.numeric(eruptions_updated$eruption_length_in_days)
+write.table(eruptions_updated, file.path(data_sets_path,"updated_eruptions_data_set.txt"))
 
 #All Data Points
 ggplot(eruptions_updated, aes(x=vei, y=eruption_length_in_days))+
   geom_jitter(aes(color=vei), alpha=1/5, show.legend=F)+
   ggtitle("Eruption Length in Days by VEI")+
   labs(x="VEI", y="Eruption Lenght (Days)")+
-  theme(panel.grid = element_blank())
+  theme(panel.grid = element_blank())+
+  ggsave(file.path(figure_path, "eruption_length_by_vei.pdf"))
 
 mean(eruptions_updated$eruption_length_in_days, na.rm=T)+sd(eruptions_updated$eruption_length_in_days, na.rm=T)
 
@@ -987,7 +907,8 @@ ggplot(eruptions_updated, aes(x=vei, y=eruption_length_in_days))+
   ylim(0,2465)+
   ggtitle("Eruption Length in Days by VEI - Within One Standard Deviation")+
   labs(x="VEI", y="Eruption Lenght (Days)")+
-  theme(panel.grid = element_blank())
+  theme(panel.grid = element_blank())+
+  ggsave(file.path(figure_path, "eruption_length_by_vei_in_one_SD.pdf"))
 ```
 
 ___Methods of Dating Past Volcanic Eruptions___
@@ -998,7 +919,8 @@ ggplot(eruptions, aes(x=evidence_method_dating))+
   geom_bar(fill="red")+
   ggtitle("Prevalence of Different Eruption Dating Methods")+
   labs(x="Evidence Dating Methods", y="Number of Eruptions")+
-  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))+
+  ggsave(file.path(figure_path, "eruptions_by_evidence_method.pdf"))
 
 eruptions2 <- filter(eruptions, evidence_method_dating != "Historical Observations")
 
@@ -1011,6 +933,7 @@ ggplot(eruptions2, aes(x=evidence_method_dating))+
   ggtitle("Prevalence of Different Eruption Dating Methods")+
   labs(x="Evidence Dating Methods", y="Number of Eruptions")+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))+
-  geom_text(data=evidence_count2, aes(x=evidence_method_dating, y=no_rows5, label=no_rows5), nudge_y=60)
+  geom_text(data=evidence_count2, aes(x=evidence_method_dating, y=no_rows5, label=no_rows5), nudge_y=60)+
+  ggsave(file.path(figure_path, "eruptions_by_evidence_method_without_hist_obs.pdf"))
 ```
 
