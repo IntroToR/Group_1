@@ -236,7 +236,8 @@ ggplot(tree_rings, aes(x=year, y=n_tree))+
 ggplot(tree_rings, aes(x=year, y=europe_temp_index))+
   geom_line()+
   ggtitle("European Temperature Index per Year")+
-  labs(x="Year (AD)", y="European Temperature Index")
+  labs(x="Year (AD)", y="European Temperature Index")+
+  theme(panel.grid=element_blank())
 
 ```
 
@@ -882,4 +883,3 @@ ggplot(eruptions2, aes(x=evidence_method_dating))+
   theme(panel.grid=element_blank(), axis.text.x = element_text(angle = 40, hjust = 1, vjust = 1))+
   geom_text(data=evidence_count2, aes(x=evidence_method_dating, y=no_rows5, label=no_rows5), nudge_y=60)
 ```
-
